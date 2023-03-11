@@ -68,7 +68,9 @@ export class Vehicle {
       const speedDifference = this.speed - leadVehicle.speed
 
       if (distanceToLeadVehicle <= 0) {
-        console.log('Vehicle crashed')
+        console.log(
+          `Vehicle crashed. Road: ${this.path[this.currentRoadIndex]}`
+        )
         // Vehicle crashed into each other.
         this.speed = 0
         this.acceleration = 0

@@ -22,6 +22,8 @@ export class TrafficScene extends Phaser.Scene {
   private selectedVehicle: Vehicle | null = null
   private vehicleStats!: Phaser.GameObjects.Text
 
+  private isPaused: boolean = false
+
   create(): void {
     this.vehicleGraphics = new Map()
     this.simulation = new Simulation(GRAPH, {
@@ -78,6 +80,9 @@ export class TrafficScene extends Phaser.Scene {
         this.simulation.addVehicle(null)
       }
     })
+    this.input.keyboard.on('keydown-P', () => {
+      this.isPaused = !this.isPaused
+    })
 
     if (DEBUG) {
       // Draw number of each node for debugging purposes
@@ -98,7 +103,9 @@ export class TrafficScene extends Phaser.Scene {
     super.update(time, delta)
 
     // Update the simulation
-    this.simulation.update(time, delta)
+    if (!this.isPaused) {
+      this.simulation.update(time, delta)
+    }
 
     // Draw the simulation
     this.draw()
@@ -142,7 +149,7 @@ export class TrafficScene extends Phaser.Scene {
     }
 
     this.simulation.roads.forEach((road) => {
-      road.vehicles.forEach((vehicle) => {
+      road.vehicles.forEach((vehicle, vehicleIndex) => {
         const vehicleGraphics = this.vehicleGraphics.get(vehicle)!
         vehicleGraphics.clear()
         vehicleGraphics.x = road.source.x + vehicle.x * road.angleCos
@@ -162,7 +169,7 @@ export class TrafficScene extends Phaser.Scene {
             vehicle.maxSpeed
           }\nAcceleration: ${vehicle.acceleration}\nDistance to lead vehicle: ${
             leadVehicleDistance?.distance ?? 'NA'
-          }`
+          }\nIndex on road: ${vehicleIndex}`
           this.drawPath(vehicle.path)
         }
         if (leadVehicleDistance?.leadVehicle === vehicle) {
