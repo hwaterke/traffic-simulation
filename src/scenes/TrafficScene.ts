@@ -38,7 +38,7 @@ export class TrafficScene extends Phaser.Scene {
     this.add.text(
       10,
       GAME_HEIGHT - 20,
-      'Shift click an intersection to spawn a vehicle'
+      'Shift click an intersection to spawn a vehicle. Press A to randomly add 10.'
     )
 
     // Monitor the Shift key
@@ -65,6 +65,12 @@ export class TrafficScene extends Phaser.Scene {
         if (closestNode !== null) {
           this.simulation.addVehicle(closestNode)
         }
+      }
+    })
+
+    this.input.keyboard.on('keydown-A', () => {
+      for (let i = 0; i < 10; i++) {
+        this.simulation.addVehicle(null)
       }
     })
 
