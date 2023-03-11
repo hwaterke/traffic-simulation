@@ -42,7 +42,7 @@ export function dijkstra(
       // reconstruct path and return it as an array of edge indices
       const path: number[] = []
       let node = endIndex
-      while (previous[node]) {
+      while (previous[node] !== null) {
         const edge = [previous[node]!, node]
         const edgeIndex = graph.edges.findIndex(
           (e) => e.source === edge[0] && e.target === edge[1]
