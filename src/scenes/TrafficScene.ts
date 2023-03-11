@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
-import {Simulation, Vehicle} from './Simulation'
-import {GRAPH} from './constants'
+import {Road, Simulation, Vehicle} from '../Simulation'
+import {GRAPH} from '../constants'
 
 const NODE_RADIUS = 6
 const EDGE_WIDTH = 12
@@ -12,6 +12,10 @@ export class TrafficScene extends Phaser.Scene {
   private graphics!: Phaser.GameObjects.Graphics
   private vehicleGraphics: Map<Vehicle, Phaser.GameObjects.Graphics> = new Map()
 
+  // Vehicle selected by the user. (used to display debug info)
+  private selectedVehicle: Vehicle | null = null
+  private vehicleStats!: Phaser.GameObjects.Text
+
   create(): void {
     this.vehicleGraphics = new Map()
     this.simulation = new Simulation(GRAPH, {
@@ -21,9 +25,23 @@ export class TrafficScene extends Phaser.Scene {
       onVehicleRemoved: (vehicle) => {
         this.vehicleGraphics.get(vehicle)!.destroy()
         this.vehicleGraphics.delete(vehicle)
+        if (this.selectedVehicle === vehicle) {
+          this.selectedVehicle = null
+          this.vehicleStats.text = 'Select a vehicle'
+        }
       },
     })
+
     this.graphics = this.add.graphics()
+    this.vehicleStats = this.add.text(10, 10, 'Select a vehicle')
+
+    this.input.on('pointerdown', (pointer: PointerEvent) => {
+      // Select the vehicle below the mouse.
+      this.selectedVehicle = this.vehicleAt(pointer.x, pointer.y)
+      if (this.selectedVehicle === null) {
+        this.vehicleStats.text = 'Select a vehicle'
+      }
+    })
 
     if (DEBUG) {
       // Draw number of each node for debugging purposes
@@ -77,6 +95,11 @@ export class TrafficScene extends Phaser.Scene {
         vehicleGraphics.y = road.source.y + vehicle.x * road.angleSin
         vehicleGraphics.fillStyle(0xffff00, 1)
 
+        if (this.selectedVehicle === vehicle) {
+          vehicleGraphics.fillStyle(0xff0000, 1)
+          this.vehicleStats.text = `Speed: ${vehicle.speed}\nMax: ${vehicle.maxSpeed}`
+        }
+
         vehicleGraphics.fillRoundedRect(
           -vehicle.length / 2,
           -VEHICLE_WIDTH / 2,
@@ -87,5 +110,30 @@ export class TrafficScene extends Phaser.Scene {
         vehicleGraphics.rotation = road.angle
       })
     })
+  }
+
+  private vehicleAt(x: number, y: number): Vehicle | null {
+    for (const road of this.simulation.roads) {
+      for (const vehicle of road.vehicles) {
+        const vehiclePosition = this.getVehiclePosition(road, vehicle)
+        if (
+          Math.abs(vehiclePosition.x - x) < vehicle.length &&
+          Math.abs(vehiclePosition.y - y) < vehicle.length
+        ) {
+          return vehicle
+        }
+      }
+    }
+    return null
+  }
+
+  private getVehiclePosition(
+    road: Road,
+    vehicle: Vehicle
+  ): {x: number; y: number} {
+    return {
+      x: road.source.x + vehicle.x * road.angleCos,
+      y: road.source.y + vehicle.x * road.angleSin,
+    }
   }
 }

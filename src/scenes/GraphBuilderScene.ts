@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
-import {Graph} from './types'
-import {GRAPH} from './constants'
+import {Graph} from '../types'
+import {GRAPH} from '../constants'
 
 const NODE_RADIUS = 6
 const EDGE_WIDTH = 4

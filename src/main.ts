@@ -1,6 +1,6 @@
 import './style.css'
 import Phaser from 'phaser'
-import {TrafficScene} from './TrafficScene'
+import {TrafficScene} from './scenes/TrafficScene'
 import {GAME_HEIGHT, GAME_WIDTH} from './constants'
 import Center = Phaser.Scale.Center
 

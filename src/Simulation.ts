@@ -1,7 +1,7 @@
 import {Graph, Node} from './types'
 import {dijkstra} from './pathfinding'
 
-class Road {
+export class Road {
   // List of vehicles on the road. Ordered by distance on the road DESC.
   public vehicles: Vehicle[]
   public readonly length: number
@@ -37,7 +37,7 @@ export class Vehicle {
   public currentRoadIndex = 0
 
   public readonly length = 10 + Math.random() * 10 // Length of the vehicle
-  public readonly maxSpeed = 10 + Math.random() * 20
+  public readonly maxSpeed = Math.floor(10 + Math.random() * 30)
   public readonly maxAcceleration = 1.44 + Math.random() * 1.5
   public readonly maxDeceleration = 4.61
   public readonly desiredDistanceFromLeadVehicle = 4
@@ -129,7 +129,6 @@ export class Simulation {
       if (road.vehicles.length > 0) {
         const leadVehicle = road.vehicles[0]
         if (leadVehicle.x > road.length) {
-          console.log('Vehicle reached end of the current road.')
           // Move the vehicle to the next road
           leadVehicle.x = 0
           leadVehicle.currentRoadIndex++
