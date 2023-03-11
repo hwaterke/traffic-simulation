@@ -37,7 +37,7 @@ export class Vehicle {
   public currentRoadIndex = 0
 
   public readonly length = 10 + Math.random() * 10 // Length of the vehicle
-  public readonly maxSpeed = Math.floor(10 + Math.random() * 30)
+  public readonly maxSpeed = Math.floor(6 + Math.random() * 40)
   public readonly maxAcceleration = 1.44 + Math.random() * 1.5
   public readonly maxDeceleration = 4.61
   public readonly desiredDistanceFromLeadVehicle = 4
@@ -112,11 +112,6 @@ export class Simulation {
   }
 
   tick() {
-    // Spawn new vehicles TODO Improve
-    if (Math.random() < 0.005) {
-      this.addVehicle()
-    }
-
     // Update position of each vehicle within each route
     this.roads.forEach((road) => {
       // Move vehicles along the road
@@ -150,8 +145,9 @@ export class Simulation {
   }
 
   // Add a vehicle on a road.
-  addVehicle() {
-    const sourceNodeIndex = Math.floor(Math.random() * this.graph.nodes.length)
+  addVehicle(sourceNode: number | null) {
+    const sourceNodeIndex =
+      sourceNode ?? Math.floor(Math.random() * this.graph.nodes.length)
     const targetNodeIndex = Math.floor(Math.random() * this.graph.nodes.length)
 
     const path = dijkstra(this.graph, sourceNodeIndex, targetNodeIndex)
@@ -162,6 +158,9 @@ export class Simulation {
       v.path = path
       road.vehicles.push(v)
       this.options.onVehicleAdded(v)
+      console.log('Vehicle added', {sourceNodeIndex, path})
+      return true
     }
+    return false
   }
 }

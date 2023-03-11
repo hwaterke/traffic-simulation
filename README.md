@@ -22,6 +22,7 @@ default one.
 # TODO
 
 - [x] Make car clickable to display position, speed and acceleration
+- [x] Spawn vehicle manually
 - [ ] Add buttons to pause the simulation, toggle debug, spawn vehicle
 - [ ] Add traffic signs
 - [ ] Improve rendering

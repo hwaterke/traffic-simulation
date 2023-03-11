@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import {Road, Simulation, Vehicle} from '../Simulation'
-import {GRAPH} from '../constants'
+import {GAME_HEIGHT, GRAPH} from '../constants'
+import {closestNodeIndex} from '../utils'
 
 const NODE_RADIUS = 6
 const EDGE_WIDTH = 12
@@ -34,12 +35,36 @@ export class TrafficScene extends Phaser.Scene {
 
     this.graphics = this.add.graphics()
     this.vehicleStats = this.add.text(10, 10, 'Select a vehicle')
+    this.add.text(
+      10,
+      GAME_HEIGHT - 20,
+      'Shift click an intersection to spawn a vehicle'
+    )
 
+    // Monitor the Shift key
+    const shift = this.input.keyboard.addKey(
+      Phaser.Input.Keyboard.KeyCodes.SHIFT
+    )
+
+    // User click
     this.input.on('pointerdown', (pointer: PointerEvent) => {
       // Select the vehicle below the mouse.
       this.selectedVehicle = this.vehicleAt(pointer.x, pointer.y)
       if (this.selectedVehicle === null) {
         this.vehicleStats.text = 'Select a vehicle'
+      }
+
+      // Did the user select a node to spawn a new vehicle?
+      if (this.input.keyboard.checkDown(shift)) {
+        // Find the node closest to the pointer position
+        const closestNode = closestNodeIndex(
+          this.simulation.graph,
+          pointer.x,
+          pointer.y
+        )
+        if (closestNode !== null) {
+          this.simulation.addVehicle(closestNode)
+        }
       }
     })
 
@@ -97,7 +122,7 @@ export class TrafficScene extends Phaser.Scene {
 
         if (this.selectedVehicle === vehicle) {
           vehicleGraphics.fillStyle(0xff0000, 1)
-          this.vehicleStats.text = `Speed: ${vehicle.speed}\nMax: ${vehicle.maxSpeed}`
+          this.vehicleStats.text = `Speed: ${vehicle.speed}\nMax speed: ${vehicle.maxSpeed}\nAcceleration: ${vehicle.acceleration}`
         }
 
         vehicleGraphics.fillRoundedRect(
