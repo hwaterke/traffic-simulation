@@ -63,8 +63,8 @@ export class Vehicle {
         console.error('One vehicle jumped over another one.')
       }
 
-      // TODO this is wrong. Car are centered. We need to remove half of the length of this car and half of the length of the lead car
-      const distanceBetweenVehicle = leadVehicle.x - this.x - this.length
+      const distanceBetweenVehicle =
+        leadVehicle.x - this.x - this.length / 2 - leadVehicle.length / 2
       const speedDifference = this.speed - leadVehicle.speed
 
       if (distanceBetweenVehicle < 0) {
