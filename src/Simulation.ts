@@ -63,6 +63,7 @@ export class Vehicle {
         console.error('One vehicle jumped over another one.')
       }
 
+      // TODO this is wrong. Car are centered. We need to remove half of the length of this car and half of the length of the lead car
       const distanceBetweenVehicle = leadVehicle.x - this.x - this.length
       const speedDifference = this.speed - leadVehicle.speed
 
@@ -155,12 +156,103 @@ export class Simulation {
     if (path && path.length > 0) {
       const road = this.roads[path[0]]
       const v = new Vehicle()
-      v.path = path
-      road.vehicles.push(v)
-      this.options.onVehicleAdded(v)
-      console.log('Vehicle added', {sourceNodeIndex, path})
-      return true
+
+      // Do we have space to spawn a vehicle on this road?
+      const firstVehicle = this.findVehicleOnPath({
+        roadPath: path,
+        vehiclesToSkip: 0,
+        startingSearchIndex: 0,
+        maximumSearchDistance: v.length,
+      })
+
+      if (
+        firstVehicle === null ||
+        v.length / 2 <
+          firstVehicle.positionOnPath - firstVehicle.vehicle.length / 2
+      ) {
+        v.path = path
+        road.vehicles.push(v)
+        this.options.onVehicleAdded(v)
+        console.log('Vehicle added', {sourceNodeIndex, path})
+        return true
+      }
     }
     return false
+  }
+
+  /**
+   * @param roadPath A path (array of road indexes) on which to search
+   * @param startingSearchIndex At which index on the path to start the search
+   * @param vehiclesToSkip The number of vehicles to skip (useful to find the leading car of a given car)
+   * @param maximumSearchDistance The maximum search distance after which we return null if no vehicle was found
+   * @returns The first vehicle found along the path (after skipping vehiclesToSkip vehicles)
+   */
+  findVehicleOnPath({
+    roadPath,
+    startingSearchIndex,
+    vehiclesToSkip,
+    maximumSearchDistance,
+  }: {
+    roadPath: number[]
+    startingSearchIndex: number
+    vehiclesToSkip: number
+    maximumSearchDistance: number | null
+  }): {
+    vehicle: Vehicle // The vehicle found along the path
+    road: number // The road on which this vehicle was found
+    positionOnPath: number // The position of the vehicle on the path starting at 0 on the first road.
+  } | null {
+    // TODO use this to find the leading car along a path and not just a given road
+    // TODO maybe add a maximum search distance ?
+
+    console.log('findVehicleOnPath', {
+      roadPath,
+      vehiclesToSkip,
+      startingSearchIndex,
+      maximumSearchDistance,
+    })
+    let vehiclePositionOnPath = 0
+    let currentIndexInPath = startingSearchIndex
+
+    while (
+      currentIndexInPath < roadPath.length &&
+      (maximumSearchDistance === null ||
+        vehiclePositionOnPath < maximumSearchDistance)
+    ) {
+      const road = this.roads[roadPath[currentIndexInPath]]
+
+      console.log(
+        'Looking at road',
+        roadPath[currentIndexInPath],
+        `length: ${road.length}`
+      )
+
+      // Enough cars on this road?
+      if (road.vehicles.length < vehiclesToSkip + 1) {
+        console.log(
+          `${vehiclesToSkip} cars to skip, ${road.vehicles.length} on road, moving to next road`
+        )
+        vehiclesToSkip -= road.vehicles.length
+        vehiclePositionOnPath += road.length
+        currentIndexInPath++
+      } else {
+        // Enough vehicle on the road
+        const vehicleIndex = road.vehicles.length - 1 - vehiclesToSkip
+
+        console.log({
+          positionOnPath: vehiclePositionOnPath + road.vehicles[vehicleIndex].x,
+          road: roadPath[currentIndexInPath],
+          vehicle: road.vehicles[vehicleIndex],
+        })
+
+        return {
+          positionOnPath: vehiclePositionOnPath + road.vehicles[vehicleIndex].x,
+          road: roadPath[currentIndexInPath],
+          vehicle: road.vehicles[vehicleIndex],
+        }
+      }
+    }
+    // We reached the end without finding a car
+    return null
   }
 }

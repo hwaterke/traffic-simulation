@@ -23,6 +23,7 @@ default one.
 
 - [x] Make car clickable to display position, speed and acceleration
 - [x] Spawn vehicle manually
+- [x] Prevent spawning vehicle on top of each other
 - [ ] Add buttons to pause the simulation, toggle debug, spawn vehicle
 - [ ] Add traffic signs
 - [ ] Improve rendering
@@ -34,3 +35,4 @@ default one.
 - [ ] Make sure the simulation logic and rendering concerns are isolated
 - [ ] Reimplement the rendering using [d3](https://d3js.org/)
 - [ ] Road speed limit
+- [ ] Add curved roads

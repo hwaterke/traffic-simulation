@@ -44,6 +44,7 @@ export const GRAPH: Graph = {
     {x: 536, y: 591},
     {x: 633, y: 591},
     {x: 15, y: 149},
+    {x: 123, y: 710},
   ],
   edges: [
     {source: 0, target: 1},
@@ -104,5 +105,6 @@ export const GRAPH: Graph = {
     {source: 4, target: 38},
     {source: 3, target: 38},
     {source: 31, target: 38},
+    {source: 39, target: 6},
   ],
 }
