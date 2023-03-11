@@ -21,10 +21,10 @@ default one.
 
 # TODO
 
+- [x] Make car clickable to display position, speed and acceleration
 - [ ] Add buttons to pause the simulation, toggle debug, spawn vehicle
 - [ ] Add traffic signs
 - [ ] Improve rendering
-- [ ] Make car clickable to display position, speed and acceleration
 - [ ] Make cars aware of cars on the next road (to avoid crash)
 - [ ] Make cars aware of cars going to the same next road on their path (to
       avoid crash)
@@ -32,3 +32,4 @@ default one.
 - [ ] Use delta time for accurate FPS
 - [ ] Make sure the simulation logic and rendering concerns are isolated
 - [ ] Reimplement the rendering using [d3](https://d3js.org/)
+- [ ] Road speed limit
