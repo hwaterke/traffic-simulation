@@ -43,7 +43,13 @@ export class Vehicle {
   public readonly desiredDistanceFromLeadVehicle = 4
   public driverReactionTime = 1
 
-  tick(leadVehicle: Vehicle | null) {
+  tick({
+    leadVehicle,
+    distanceToLeadVehicle,
+  }: {
+    leadVehicle: Vehicle | null
+    distanceToLeadVehicle: number | null
+  }) {
     const DT = 1 / 60
 
     // Update position and velocity
@@ -58,16 +64,11 @@ export class Vehicle {
     // Update the acceleration
     let alpha = 0
 
-    if (leadVehicle) {
-      if (this.x > leadVehicle.x) {
-        console.error('One vehicle jumped over another one.')
-      }
-
-      const distanceBetweenVehicle =
-        leadVehicle.x - this.x - this.length / 2 - leadVehicle.length / 2
+    if (leadVehicle && distanceToLeadVehicle) {
       const speedDifference = this.speed - leadVehicle.speed
 
-      if (distanceBetweenVehicle < 0) {
+      if (distanceToLeadVehicle <= 0) {
+        console.log('Vehicle crashed')
         // Vehicle crashed into each other.
         this.speed = 0
         this.acceleration = 0
@@ -83,7 +84,7 @@ export class Vehicle {
             this.driverReactionTime * this.speed +
               (speedDifference * this.speed) / sqrt
           )) /
-        distanceBetweenVehicle
+        distanceToLeadVehicle
     }
 
     this.acceleration =
@@ -116,10 +117,22 @@ export class Simulation {
     // Update position of each vehicle within each route
     this.roads.forEach((road) => {
       // Move vehicles along the road
-      road.vehicles.forEach((vehicle, index) =>
-        // TODO For the first vehicle, the lead is the last vehicle on the next road.
-        vehicle.tick(index > 0 ? road.vehicles[index - 1] : null)
-      )
+      road.vehicles.forEach((vehicle, index) => {
+        const leadVehicle = this.findDistanceToLeadVehicle({
+          path: vehicle.path,
+          currentRoadIndex: vehicle.currentRoadIndex,
+          vehicleIndex: index,
+        })
+
+        if (leadVehicle === null) {
+          vehicle.tick({leadVehicle: null, distanceToLeadVehicle: null})
+        } else {
+          vehicle.tick({
+            leadVehicle: leadVehicle.leadVehicle,
+            distanceToLeadVehicle: leadVehicle.distance,
+          })
+        }
+      })
 
       // Make sure the first vehicle is not at the end of the road
       if (road.vehicles.length > 0) {
@@ -158,17 +171,15 @@ export class Simulation {
       const v = new Vehicle()
 
       // Do we have space to spawn a vehicle on this road?
-      const firstVehicle = this.findVehicleOnPath({
-        roadPath: path,
-        vehiclesToSkip: 0,
-        startingSearchIndex: 0,
-        maximumSearchDistance: v.length,
+      const firstVehicle = this.findFirstVehicle({
+        path,
+        currentRoadIndex: 0,
       })
 
       if (
         firstVehicle === null ||
         v.length / 2 <
-          firstVehicle.positionOnPath - firstVehicle.vehicle.length / 2
+          firstVehicle.distanceToVehicle - firstVehicle.vehicle.length / 2
       ) {
         v.path = path
         road.vehicles.push(v)
@@ -180,79 +191,84 @@ export class Simulation {
     return false
   }
 
-  /**
-   * @param roadPath A path (array of road indexes) on which to search
-   * @param startingSearchIndex At which index on the path to start the search
-   * @param vehiclesToSkip The number of vehicles to skip (useful to find the leading car of a given car)
-   * @param maximumSearchDistance The maximum search distance after which we return null if no vehicle was found
-   * @returns The first vehicle found along the path (after skipping vehiclesToSkip vehicles)
-   */
-  findVehicleOnPath({
-    roadPath,
-    startingSearchIndex,
-    vehiclesToSkip,
-    maximumSearchDistance,
+  // Finds the first vehicle on the provided path.
+  findFirstVehicle({
+    path,
+    currentRoadIndex,
   }: {
-    roadPath: number[]
-    startingSearchIndex: number
-    vehiclesToSkip: number
-    maximumSearchDistance: number | null
+    path: number[]
+    currentRoadIndex: number
   }): {
-    vehicle: Vehicle // The vehicle found along the path
-    road: number // The road on which this vehicle was found
-    positionOnPath: number // The position of the vehicle on the path starting at 0 on the first road.
+    road: Road
+    vehicle: Vehicle
+    distanceToVehicle: number
   } | null {
-    // TODO use this to find the leading car along a path and not just a given road
-    // TODO maybe add a maximum search distance ?
+    let distanceToVehicle = 0
 
-    console.log('findVehicleOnPath', {
-      roadPath,
-      vehiclesToSkip,
-      startingSearchIndex,
-      maximumSearchDistance,
-    })
-    let vehiclePositionOnPath = 0
-    let currentIndexInPath = startingSearchIndex
-
-    while (
-      currentIndexInPath < roadPath.length &&
-      (maximumSearchDistance === null ||
-        vehiclePositionOnPath < maximumSearchDistance)
-    ) {
-      const road = this.roads[roadPath[currentIndexInPath]]
-
-      console.log(
-        'Looking at road',
-        roadPath[currentIndexInPath],
-        `length: ${road.length}`
-      )
-
-      // Enough cars on this road?
-      if (road.vehicles.length < vehiclesToSkip + 1) {
-        console.log(
-          `${vehiclesToSkip} cars to skip, ${road.vehicles.length} on road, moving to next road`
-        )
-        vehiclesToSkip -= road.vehicles.length
-        vehiclePositionOnPath += road.length
-        currentIndexInPath++
-      } else {
-        // Enough vehicle on the road
-        const vehicleIndex = road.vehicles.length - 1 - vehiclesToSkip
-
-        console.log({
-          positionOnPath: vehiclePositionOnPath + road.vehicles[vehicleIndex].x,
-          road: roadPath[currentIndexInPath],
-          vehicle: road.vehicles[vehicleIndex],
-        })
+    while (currentRoadIndex < path.length) {
+      const road = this.roads[path[currentRoadIndex]]
+      if (road.vehicles.length > 0) {
+        const firstVehicle = road.vehicles[road.vehicles.length - 1]
 
         return {
-          positionOnPath: vehiclePositionOnPath + road.vehicles[vehicleIndex].x,
-          road: roadPath[currentIndexInPath],
-          vehicle: road.vehicles[vehicleIndex],
+          distanceToVehicle: distanceToVehicle + firstVehicle.x,
+          road,
+          vehicle: firstVehicle,
         }
       }
+      distanceToVehicle += road.length
+      currentRoadIndex++
     }
-    // We reached the end without finding a car
+
+    return null
+  }
+
+  findDistanceToLeadVehicle({
+    path,
+    currentRoadIndex,
+    vehicleIndex,
+  }: {
+    path: number[]
+    currentRoadIndex: number
+    vehicleIndex: number
+  }): {
+    leadVehicle: Vehicle
+    distance: number
+  } | null {
+    const road = this.roads[path[currentRoadIndex]]
+    const vehicle = road.vehicles[vehicleIndex]
+
+    if (vehicleIndex > 0) {
+      const leadVehicle = road.vehicles[vehicleIndex - 1]
+      return {
+        leadVehicle,
+        distance:
+          leadVehicle.x -
+          leadVehicle.length / 2 -
+          vehicle.x -
+          vehicle.length / 2,
+      }
+    }
+
+    // First vehicle on its road.
+    const leadVehicle = this.findFirstVehicle({
+      path,
+      currentRoadIndex: currentRoadIndex + 1,
+    })
+
+    if (leadVehicle) {
+      const distanceToEndOfRoute = road.length - vehicle.x
+
+      return {
+        leadVehicle: leadVehicle.vehicle,
+        distance:
+          distanceToEndOfRoute +
+          leadVehicle.distanceToVehicle -
+          leadVehicle.vehicle.length / 2 -
+          vehicle.length / 2,
+      }
+    }
+
     return null
   }
 }

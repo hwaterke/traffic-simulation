@@ -24,10 +24,10 @@ default one.
 - [x] Make car clickable to display position, speed and acceleration
 - [x] Spawn vehicle manually
 - [x] Prevent spawning vehicle on top of each other
+- [x] Make cars aware of cars on the next road (to avoid crash)
 - [ ] Add buttons to pause the simulation, toggle debug, spawn vehicle
 - [ ] Add traffic signs
 - [ ] Improve rendering
-- [ ] Make cars aware of cars on the next road (to avoid crash)
 - [ ] Make cars aware of cars going to the same next road on their path (to
       avoid crash)
 - [ ] Create a graph generator for random road layouts

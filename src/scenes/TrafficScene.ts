@@ -8,6 +8,11 @@ const EDGE_WIDTH = 12
 const VEHICLE_WIDTH = 6
 const DEBUG = false
 
+const COLOR = {
+  PINK: 0xff00ff,
+  TEAL: 0x008080,
+}
+
 export class TrafficScene extends Phaser.Scene {
   private simulation!: Simulation
   private graphics!: Phaser.GameObjects.Graphics
@@ -118,6 +123,24 @@ export class TrafficScene extends Phaser.Scene {
 
     // Draw vehicles
     this.graphics.fillStyle(0xff0000, 1)
+
+    // Find the lead vehicle of the selected vehicle
+    let leadVehicleDistance: {leadVehicle: Vehicle; distance: number} | null =
+      null
+    if (this.selectedVehicle) {
+      // Find the index of the selected vehicle on his road.
+      const road =
+        this.simulation.roads[
+          this.selectedVehicle.path[this.selectedVehicle.currentRoadIndex]
+        ]
+      const vehicleIndex = road.vehicles.indexOf(this.selectedVehicle)
+      leadVehicleDistance = this.simulation.findDistanceToLeadVehicle({
+        path: this.selectedVehicle.path,
+        currentRoadIndex: this.selectedVehicle.currentRoadIndex,
+        vehicleIndex,
+      })
+    }
+
     this.simulation.roads.forEach((road) => {
       road.vehicles.forEach((vehicle) => {
         const vehicleGraphics = this.vehicleGraphics.get(vehicle)!
@@ -134,8 +157,16 @@ export class TrafficScene extends Phaser.Scene {
         }
 
         if (this.selectedVehicle === vehicle) {
-          vehicleGraphics.fillStyle(0xff00ff, 1)
-          this.vehicleStats.text = `Speed: ${vehicle.speed}\nMax speed: ${vehicle.maxSpeed}\nAcceleration: ${vehicle.acceleration}`
+          vehicleGraphics.fillStyle(COLOR.PINK)
+          this.vehicleStats.text = `Speed: ${vehicle.speed}\nMax speed: ${
+            vehicle.maxSpeed
+          }\nAcceleration: ${vehicle.acceleration}\nDistance to lead vehicle: ${
+            leadVehicleDistance?.distance ?? 'NA'
+          }`
+          this.drawPath(vehicle.path)
+        }
+        if (leadVehicleDistance?.leadVehicle === vehicle) {
+          vehicleGraphics.fillStyle(COLOR.TEAL)
         }
 
         vehicleGraphics.fillRoundedRect(
@@ -173,5 +204,15 @@ export class TrafficScene extends Phaser.Scene {
       x: road.source.x + vehicle.x * road.angleCos,
       y: road.source.y + vehicle.x * road.angleSin,
     }
+  }
+
+  private drawPath(path: number[]) {
+    this.graphics.lineStyle(1, COLOR.PINK)
+    path.forEach((roadIndex) => {
+      const road = this.simulation.roads[roadIndex]
+      const startNode = road.source
+      const endNode = road.target
+      this.graphics.lineBetween(startNode.x, startNode.y, endNode.x, endNode.y)
+    })
   }
 }
