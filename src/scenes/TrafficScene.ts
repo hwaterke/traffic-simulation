@@ -118,10 +118,17 @@ export class TrafficScene extends Phaser.Scene {
         vehicleGraphics.clear()
         vehicleGraphics.x = road.source.x + vehicle.x * road.angleCos
         vehicleGraphics.y = road.source.y + vehicle.x * road.angleSin
-        vehicleGraphics.fillStyle(0xffff00, 1)
+
+        if (vehicle.acceleration < -0.001) {
+          vehicleGraphics.fillStyle(0xff0000, 1)
+        } else if (vehicle.acceleration > 0.001) {
+          vehicleGraphics.fillStyle(0x00ff00, 1)
+        } else {
+          vehicleGraphics.fillStyle(0xffff00, 1)
+        }
 
         if (this.selectedVehicle === vehicle) {
-          vehicleGraphics.fillStyle(0xff0000, 1)
+          vehicleGraphics.fillStyle(0xff00ff, 1)
           this.vehicleStats.text = `Speed: ${vehicle.speed}\nMax speed: ${vehicle.maxSpeed}\nAcceleration: ${vehicle.acceleration}`
         }
 
