@@ -92,6 +92,7 @@ export class GraphBuilderScene extends Phaser.Scene {
             })
           } else {
             this.selectedNodeIndex = nodeBelow
+            console.log('Selected node:', this.selectedNodeIndex)
           }
         }
       }
