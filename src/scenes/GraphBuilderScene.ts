@@ -70,7 +70,7 @@ export class GraphBuilderScene extends Phaser.Scene {
           this.selectedNodeIndex = null
         }
       } else {
-        if (this.selectedNodeIndex) {
+        if (this.selectedNodeIndex !== null) {
           // Move it instead of creating a new node
           this.graph!.nodes[this.selectedNodeIndex] = {
             x: pointer.x,
