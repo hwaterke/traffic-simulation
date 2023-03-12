@@ -27,7 +27,8 @@ default one.
 - [x] Make cars aware of cars on the next road (to avoid crash)
 - [x] Add ability to pause by pressing `p`
 - [x] Add traffic signs
-- [ ] Add buttons to toggle debug
+- [ ] Add buttons to toggle debug (road index, node index, node color, road
+      direction)
 - [ ] Improve rendering
 - [ ] Make cars aware of cars going to the same next road on their path (to
       avoid crash)
@@ -37,3 +38,5 @@ default one.
 - [ ] Reimplement the rendering using [d3](https://d3js.org/)
 - [ ] Road speed limit
 - [ ] Add curved roads
+- [ ] Allow zooming on the map
+- [ ] Add tests

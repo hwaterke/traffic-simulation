@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import {Road, Simulation, Vehicle} from '../Simulation'
+import {Road, Simulation, Vehicle} from '../simulation/Simulation'
 import {GAME_HEIGHT, GRAPH} from '../constants'
 import {closestNodeIndex} from '../utils'
 
@@ -9,6 +9,7 @@ const VEHICLE_WIDTH = 6
 const DEBUG = false
 
 const COLOR = {
+  ROADS: 0x666666,
   PINK: 0xff00ff,
   TEAL: 0x008080,
   RED_SIGNAL: 0xff0000,
@@ -226,7 +227,7 @@ export class TrafficScene extends Phaser.Scene {
   }
 
   private drawRoads() {
-    this.graphics.lineStyle(EDGE_WIDTH, 0x333333, 1)
+    this.graphics.lineStyle(EDGE_WIDTH, COLOR.ROADS, 1)
     this.simulation.roads.forEach((road) => {
       const startNode = road.source
       const endNode = road.target
@@ -235,7 +236,7 @@ export class TrafficScene extends Phaser.Scene {
   }
 
   private drawNodes() {
-    this.graphics.fillStyle(DEBUG ? 0x00ffff : 0x333333, 1)
+    this.graphics.fillStyle(DEBUG ? 0x00ffff : COLOR.ROADS, 1)
     this.simulation.graph.nodes.forEach((node) => {
       this.graphics.fillCircle(node.x, node.y, NODE_RADIUS)
     })
