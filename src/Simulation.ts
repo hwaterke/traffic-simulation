@@ -1,5 +1,6 @@
 import {Graph, Node} from './types'
 import {dijkstra} from './pathfinding'
+import {TrafficSignal} from './TrafficSignal'
 
 export class Road {
   // List of vehicles on the road. Ordered by distance on the road DESC.
@@ -8,6 +9,8 @@ export class Road {
   public readonly angleSin: number
   public readonly angleCos: number
   public readonly angle: number
+  public trafficSignal: TrafficSignal | null = null
+  public trafficSignalGroupIndex: number | null = null
 
   constructor(public source: Node, public target: Node) {
     this.vehicles = []
@@ -26,6 +29,18 @@ export class Road {
       target.y
     )
   }
+
+  setTrafficSignal(signal: TrafficSignal, groupIndex: number) {
+    this.trafficSignal = signal
+    this.trafficSignalGroupIndex = groupIndex
+  }
+
+  redLight(): boolean {
+    if (this.trafficSignal) {
+      return this.trafficSignal.isGroupStopped(this.trafficSignalGroupIndex!)
+    }
+    return false
+  }
 }
 
 export class Vehicle {
@@ -35,10 +50,12 @@ export class Vehicle {
 
   public path: number[] = [] // List of road indexes
   public currentRoadIndex = 0
+  public shouldStop: boolean = false
 
   public readonly length = 10 + Math.random() * 10 // Length of the vehicle
-  public readonly maxSpeed = Math.floor(6 + Math.random() * 40)
-  public readonly maxAcceleration = 1.44 + Math.random() * 1.5
+  public maxSpeed = Math.floor(8 + Math.random() * 20)
+  public readonly engineMaxSpeed = this.maxSpeed
+  public readonly maxAcceleration = 1.44
   public readonly maxDeceleration = 4.61
   public readonly desiredDistanceFromLeadVehicle = 4
   public driverReactionTime = 1
@@ -92,6 +109,12 @@ export class Vehicle {
     this.acceleration =
       this.maxAcceleration *
       (1 - Math.pow(this.speed / this.maxSpeed, 4) - Math.pow(alpha, 2))
+
+    if (this.shouldStop) {
+      // Brake as much as allowed.
+      // We do not care if the acceleration stays negative as we do not allow the speed to go below 0
+      this.acceleration = -this.maxDeceleration
+    }
   }
 }
 
@@ -102,6 +125,7 @@ type SimulationOptions = {
 
 export class Simulation {
   roads: Road[] = []
+  trafficSignals: TrafficSignal[] = []
 
   constructor(public graph: Graph, private options: SimulationOptions) {
     // Build Roads
@@ -134,6 +158,28 @@ export class Simulation {
             distanceToLeadVehicle: leadVehicle.distance,
           })
         }
+
+        // For the first vehicle check if the traffic signal is there and red
+        if (index === 0) {
+          if (road.redLight()) {
+            // In the stop zone ?
+            if (vehicle.x >= road.length - road.trafficSignal!.stopDistance) {
+              vehicle.shouldStop = true
+            } else if (
+              vehicle.x >=
+              road.length - road.trafficSignal!.slowDistance
+            ) {
+              vehicle.maxSpeed = 6 // Max speed of 15 in slow zone
+            }
+          } else {
+            vehicle.maxSpeed = vehicle.engineMaxSpeed // No need to slow down
+            vehicle.shouldStop = false
+          }
+        } else {
+          // Make sure no vehicles are slowed down
+          vehicle.maxSpeed = vehicle.engineMaxSpeed
+          vehicle.shouldStop = false
+        }
       })
 
       // Make sure the first vehicle is not at the end of the road
@@ -157,6 +203,10 @@ export class Simulation {
           }
         }
       }
+    })
+
+    this.trafficSignals.forEach((trafficSignal) => {
+      trafficSignal.update()
     })
   }
 
@@ -272,5 +322,16 @@ export class Simulation {
     }
 
     return null
+  }
+
+  addTrafficSignals(roadGroups: number[][]) {
+    const signals = new TrafficSignal(roadGroups.length)
+    this.trafficSignals.push(signals)
+    roadGroups.forEach((roadGround, groupIndex) => {
+      roadGround.forEach((roadIndex) => {
+        const road = this.roads[roadIndex]
+        road.setTrafficSignal(signals, groupIndex)
+      })
+    })
   }
 }

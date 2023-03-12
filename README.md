@@ -26,8 +26,8 @@ default one.
 - [x] Prevent spawning vehicle on top of each other
 - [x] Make cars aware of cars on the next road (to avoid crash)
 - [x] Add ability to pause by pressing `p`
+- [x] Add traffic signs
 - [ ] Add buttons to toggle debug
-- [ ] Add traffic signs
 - [ ] Improve rendering
 - [ ] Make cars aware of cars going to the same next road on their path (to
       avoid crash)

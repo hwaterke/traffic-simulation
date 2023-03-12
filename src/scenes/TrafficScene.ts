@@ -11,6 +11,8 @@ const DEBUG = false
 const COLOR = {
   PINK: 0xff00ff,
   TEAL: 0x008080,
+  RED_SIGNAL: 0xff0000,
+  GREEN_SIGNAL: 0x00ff00,
 }
 
 export class TrafficScene extends Phaser.Scene {
@@ -39,6 +41,11 @@ export class TrafficScene extends Phaser.Scene {
         }
       },
     })
+
+    this.simulation.addTrafficSignals([[6], [8]])
+    this.simulation.addTrafficSignals([[51], [47]])
+    this.simulation.addTrafficSignals([[15], [32]])
+    this.simulation.addTrafficSignals([[55], [56], [57]])
 
     this.graphics = this.add.graphics()
     this.vehicleStats = this.add.text(10, 10, 'Select a vehicle')
@@ -83,6 +90,9 @@ export class TrafficScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-P', () => {
       this.isPaused = !this.isPaused
     })
+    this.input.keyboard.on('keydown-T', () => {
+      this.simulation.tick()
+    })
 
     if (DEBUG) {
       // Draw number of each node for debugging purposes
@@ -113,20 +123,8 @@ export class TrafficScene extends Phaser.Scene {
 
   private draw(): void {
     this.graphics.clear()
-
-    // Draw roads
-    this.graphics.lineStyle(EDGE_WIDTH, 0x333333, 1)
-    this.simulation.roads.forEach((road) => {
-      const startNode = road.source
-      const endNode = road.target
-      this.graphics.lineBetween(startNode.x, startNode.y, endNode.x, endNode.y)
-    })
-
-    // Draw nodes
-    this.graphics.fillStyle(DEBUG ? 0x00ffff : 0x333333, 1)
-    this.simulation.graph.nodes.forEach((node) => {
-      this.graphics.fillCircle(node.x, node.y, NODE_RADIUS)
-    })
+    this.drawRoads()
+    this.drawNodes()
 
     // Draw vehicles
     this.graphics.fillStyle(0xff0000, 1)
@@ -167,7 +165,9 @@ export class TrafficScene extends Phaser.Scene {
           vehicleGraphics.fillStyle(COLOR.PINK)
           this.vehicleStats.text = `Speed: ${vehicle.speed}\nMax speed: ${
             vehicle.maxSpeed
-          }\nAcceleration: ${vehicle.acceleration}\nDistance to lead vehicle: ${
+          }\nEngine max speed: ${vehicle.engineMaxSpeed}\nAcceleration: ${
+            vehicle.acceleration
+          }\nDistance to lead vehicle: ${
             leadVehicleDistance?.distance ?? 'NA'
           }\nIndex on road: ${vehicleIndex}`
           this.drawPath(vehicle.path)
@@ -186,6 +186,8 @@ export class TrafficScene extends Phaser.Scene {
         vehicleGraphics.rotation = road.angle
       })
     })
+
+    this.drawTrafficSignals()
   }
 
   private vehicleAt(x: number, y: number): Vehicle | null {
@@ -220,6 +222,41 @@ export class TrafficScene extends Phaser.Scene {
       const startNode = road.source
       const endNode = road.target
       this.graphics.lineBetween(startNode.x, startNode.y, endNode.x, endNode.y)
+    })
+  }
+
+  private drawRoads() {
+    this.graphics.lineStyle(EDGE_WIDTH, 0x333333, 1)
+    this.simulation.roads.forEach((road) => {
+      const startNode = road.source
+      const endNode = road.target
+      this.graphics.lineBetween(startNode.x, startNode.y, endNode.x, endNode.y)
+    })
+  }
+
+  private drawNodes() {
+    this.graphics.fillStyle(DEBUG ? 0x00ffff : 0x333333, 1)
+    this.simulation.graph.nodes.forEach((node) => {
+      this.graphics.fillCircle(node.x, node.y, NODE_RADIUS)
+    })
+  }
+
+  private drawTrafficSignals() {
+    this.simulation.roads.forEach((road) => {
+      if (road.trafficSignal) {
+        if (road.redLight()) {
+          this.graphics.lineStyle(EDGE_WIDTH + 2, COLOR.RED_SIGNAL)
+        } else {
+          this.graphics.lineStyle(EDGE_WIDTH + 2, COLOR.GREEN_SIGNAL)
+        }
+
+        this.graphics.lineBetween(
+          road.target.x - 8 * road.angleCos,
+          road.target.y - 8 * road.angleSin,
+          road.target.x - 5 * road.angleCos,
+          road.target.y - 5 * road.angleSin
+        )
+      }
     })
   }
 }
