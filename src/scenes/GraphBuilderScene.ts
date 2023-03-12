@@ -28,7 +28,7 @@ export class GraphBuilderScene extends Phaser.Scene {
     )
 
     // Delete selected node
-    this.input.keyboard.on('keydown-D', (event) => {
+    this.input.keyboard.on('keydown-D', () => {
       if (this.selectedNodeIndex !== null) {
         // Remove all edges containing that node
         this.graph.edges = this.graph.edges.filter(
@@ -52,7 +52,7 @@ export class GraphBuilderScene extends Phaser.Scene {
       }
     })
 
-    this.input.on('pointerdown', (pointer) => {
+    this.input.on('pointerdown', (pointer: PointerEvent) => {
       // Shift is used to join the selected edge with the one clicked.
       if (
         this.input.keyboard.checkDown(shift) &&
