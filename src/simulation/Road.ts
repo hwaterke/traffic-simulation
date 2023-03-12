@@ -2,33 +2,19 @@ import {TrafficSignal} from '../TrafficSignal'
 import {Node} from '../types'
 import {Vehicle} from './Vehicle'
 
-export class Road {
+export abstract class Road {
   // List of vehicles on the road. Ordered by distance on the road DESC.
-  public vehicles: Vehicle[]
-  public readonly length: number
-  public readonly angleSin: number
-  public readonly angleCos: number
-  public readonly angle: number
+  public vehicles: Vehicle[] = []
   public trafficSignal: TrafficSignal | null = null
   public trafficSignalGroupIndex: number | null = null
 
-  constructor(public source: Node, public target: Node) {
-    this.vehicles = []
-    this.length = Phaser.Math.Distance.Between(
-      source.x,
-      source.y,
-      target.x,
-      target.y
-    )
-    this.angleSin = (target.y - source.y) / this.length
-    this.angleCos = (target.x - source.x) / this.length
-    this.angle = Phaser.Math.Angle.Between(
-      source.x,
-      source.y,
-      target.x,
-      target.y
-    )
-  }
+  protected constructor(public source: Node, public target: Node) {}
+
+  abstract getLength(): number
+
+  abstract getPoint(positionOnRoad: number): {x: number; y: number}
+
+  abstract getAngle(positionOnRoad: number): number
 
   setTrafficSignal(signal: TrafficSignal, groupIndex: number) {
     this.trafficSignal = signal
@@ -40,5 +26,11 @@ export class Road {
       return this.trafficSignal.isGroupStopped(this.trafficSignalGroupIndex!)
     }
     return false
+  }
+
+  protected assertValidPositionOnRoad(positionOnRoad: number): void {
+    if (positionOnRoad < 0 || positionOnRoad > this.getLength()) {
+      throw new Error('Invalid location on road')
+    }
   }
 }

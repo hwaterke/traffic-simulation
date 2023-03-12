@@ -8,6 +8,7 @@ export type Node = {
 export type Edge = {
   source: number // Index of the starting Node
   target: number // Index of the end Node
+  curvedControl?: [number, number]
 }
 
 export type Graph = {

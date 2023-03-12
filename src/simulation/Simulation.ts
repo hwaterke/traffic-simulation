@@ -3,6 +3,8 @@ import {dijkstra} from '../pathfinding'
 import {TrafficSignal} from '../TrafficSignal'
 import {Vehicle} from './Vehicle'
 import {Road} from './Road'
+import {CurvedRoad} from './CurvedRoad'
+import {LinearRoad} from './LinearRoad'
 
 type SimulationOptions = {
   onVehicleAdded: (vehicle: Vehicle) => void
@@ -15,9 +17,16 @@ export class Simulation {
 
   constructor(public graph: Graph, private options: SimulationOptions) {
     // Build Roads
-    this.roads = this.graph.edges.map(
-      (edge) => new Road(graph.nodes[edge.source], graph.nodes[edge.target])
-    )
+    this.roads = this.graph.edges.map((edge) => {
+      if (edge.curvedControl !== undefined) {
+        return new CurvedRoad(
+          graph.nodes[edge.source],
+          graph.nodes[edge.target],
+          edge.curvedControl
+        )
+      }
+      return new LinearRoad(graph.nodes[edge.source], graph.nodes[edge.target])
+    })
   }
 
   update(time: number, delta: number) {
@@ -49,11 +58,14 @@ export class Simulation {
         if (index === 0) {
           if (road.redLight()) {
             // In the stop zone ?
-            if (vehicle.x >= road.length - road.trafficSignal!.stopDistance) {
+            if (
+              vehicle.x >=
+              road.getLength() - road.trafficSignal!.stopDistance
+            ) {
               vehicle.shouldStop = true
             } else if (
               vehicle.x >=
-              road.length - road.trafficSignal!.slowDistance
+              road.getLength() - road.trafficSignal!.slowDistance
             ) {
               vehicle.maxSpeed = 6 // Max speed of 15 in slow zone
             }
@@ -71,7 +83,7 @@ export class Simulation {
       // Make sure the first vehicle is not at the end of the road
       if (road.vehicles.length > 0) {
         const leadVehicle = road.vehicles[0]
-        if (leadVehicle.x > road.length) {
+        if (leadVehicle.x > road.getLength()) {
           // Move the vehicle to the next road
           leadVehicle.x = 0
           leadVehicle.currentRoadIndex++
@@ -122,7 +134,6 @@ export class Simulation {
         v.path = path
         road.vehicles.push(v)
         this.options.onVehicleAdded(v)
-        console.log('Vehicle added', {sourceNodeIndex, path})
         return true
       }
     }
@@ -154,7 +165,7 @@ export class Simulation {
           vehicle: firstVehicle,
         }
       }
-      distanceToVehicle += road.length
+      distanceToVehicle += road.getLength()
       currentRoadIndex++
     }
 
@@ -195,7 +206,7 @@ export class Simulation {
     })
 
     if (leadVehicle) {
-      const distanceToEndOfRoute = road.length - vehicle.x
+      const distanceToEndOfRoute = road.getLength() - vehicle.x
 
       return {
         leadVehicle: leadVehicle.vehicle,

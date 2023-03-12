@@ -1,7 +1,9 @@
 import Phaser from 'phaser'
-import {Road, Simulation, Vehicle} from '../simulation/Simulation'
+import {Simulation} from '../simulation/Simulation'
 import {GAME_HEIGHT, GRAPH} from '../constants'
 import {closestNodeIndex} from '../utils'
+import {CurvedRoad} from '../simulation/CurvedRoad'
+import {Vehicle} from '../simulation/Vehicle'
 
 const NODE_RADIUS = 6
 const EDGE_WIDTH = 12
@@ -43,10 +45,13 @@ export class TrafficScene extends Phaser.Scene {
       },
     })
 
-    this.simulation.addTrafficSignals([[6], [8]])
-    this.simulation.addTrafficSignals([[51], [47]])
-    this.simulation.addTrafficSignals([[15], [32]])
-    this.simulation.addTrafficSignals([[55], [56], [57]])
+    this.simulation.addTrafficSignals([
+      [25, 22],
+      [14, 26],
+    ])
+    this.simulation.addTrafficSignals([[21], [18]])
+    this.simulation.addTrafficSignals([[39], [13]])
+    this.simulation.addTrafficSignals([[27], [38]])
 
     this.graphics = this.add.graphics()
     this.vehicleStats = this.add.text(10, 10, 'Select a vehicle')
@@ -151,8 +156,10 @@ export class TrafficScene extends Phaser.Scene {
       road.vehicles.forEach((vehicle, vehicleIndex) => {
         const vehicleGraphics = this.vehicleGraphics.get(vehicle)!
         vehicleGraphics.clear()
-        vehicleGraphics.x = road.source.x + vehicle.x * road.angleCos
-        vehicleGraphics.y = road.source.y + vehicle.x * road.angleSin
+
+        const vehiclePosition = road.getPoint(vehicle.x)
+        vehicleGraphics.x = vehiclePosition.x
+        vehicleGraphics.y = vehiclePosition.y
 
         if (vehicle.acceleration < -0.001) {
           vehicleGraphics.fillStyle(0xff0000, 1)
@@ -184,7 +191,7 @@ export class TrafficScene extends Phaser.Scene {
           VEHICLE_WIDTH,
           2
         )
-        vehicleGraphics.rotation = road.angle
+        vehicleGraphics.rotation = road.getAngle(vehicle.x)
       })
     })
 
@@ -194,7 +201,7 @@ export class TrafficScene extends Phaser.Scene {
   private vehicleAt(x: number, y: number): Vehicle | null {
     for (const road of this.simulation.roads) {
       for (const vehicle of road.vehicles) {
-        const vehiclePosition = this.getVehiclePosition(road, vehicle)
+        const vehiclePosition = road.getPoint(vehicle.x)
         if (
           Math.abs(vehiclePosition.x - x) < vehicle.length &&
           Math.abs(vehiclePosition.y - y) < vehicle.length
@@ -206,32 +213,41 @@ export class TrafficScene extends Phaser.Scene {
     return null
   }
 
-  private getVehiclePosition(
-    road: Road,
-    vehicle: Vehicle
-  ): {x: number; y: number} {
-    return {
-      x: road.source.x + vehicle.x * road.angleCos,
-      y: road.source.y + vehicle.x * road.angleSin,
-    }
-  }
-
   private drawPath(path: number[]) {
     this.graphics.lineStyle(1, COLOR.PINK)
     path.forEach((roadIndex) => {
       const road = this.simulation.roads[roadIndex]
       const startNode = road.source
       const endNode = road.target
-      this.graphics.lineBetween(startNode.x, startNode.y, endNode.x, endNode.y)
+      if (road instanceof CurvedRoad) {
+        road.curve.draw(this.graphics)
+      } else {
+        this.graphics.lineBetween(
+          startNode.x,
+          startNode.y,
+          endNode.x,
+          endNode.y
+        )
+      }
     })
   }
 
   private drawRoads() {
-    this.graphics.lineStyle(EDGE_WIDTH, COLOR.ROADS, 1)
+    this.graphics.lineStyle(DEBUG ? 2 : EDGE_WIDTH, COLOR.ROADS, 1)
     this.simulation.roads.forEach((road) => {
       const startNode = road.source
       const endNode = road.target
-      this.graphics.lineBetween(startNode.x, startNode.y, endNode.x, endNode.y)
+
+      if (road instanceof CurvedRoad) {
+        road.curve.draw(this.graphics)
+      } else {
+        this.graphics.lineBetween(
+          startNode.x,
+          startNode.y,
+          endNode.x,
+          endNode.y
+        )
+      }
     })
   }
 
@@ -251,11 +267,14 @@ export class TrafficScene extends Phaser.Scene {
           this.graphics.lineStyle(EDGE_WIDTH + 2, COLOR.GREEN_SIGNAL)
         }
 
+        const trafficSignalStart = road.getPoint(road.getLength())
+        const trafficSignalEnd = road.getPoint(road.getLength() - 5)
+
         this.graphics.lineBetween(
-          road.target.x - 8 * road.angleCos,
-          road.target.y - 8 * road.angleSin,
-          road.target.x - 5 * road.angleCos,
-          road.target.y - 5 * road.angleSin
+          trafficSignalStart.x,
+          trafficSignalStart.y,
+          trafficSignalEnd.x,
+          trafficSignalEnd.y
         )
       }
     })

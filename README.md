@@ -40,3 +40,11 @@ default one.
 - [ ] Add curved roads
 - [ ] Allow zooming on the map
 - [ ] Add tests
+- [ ] Rework vehicle logic to consider obstacles and not leading vehicle.
+  - Traffic signs are obstacles just like vehicles. With a speed of 0
+- [ ] To prevent bugs, when the leading obstacles for a vehicle is too close,
+      immediately stop the vehicle and stop relying on the acceleration.
+- [ ] Make a high level data structure that is then translated to low level
+      Graph
+  - Include road type (one way, number of lanes, speed limit)
+  - Include intersection type (traffic signal or stop signs or right priority)

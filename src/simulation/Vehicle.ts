@@ -8,7 +8,7 @@ export class Vehicle {
   public shouldStop: boolean = false
 
   public readonly length = 10 + Math.random() * 10 // Length of the vehicle
-  public maxSpeed = Math.floor(8 + Math.random() * 20)
+  public maxSpeed = Math.floor(8 + Math.random() * 12)
   public readonly engineMaxSpeed = this.maxSpeed
   public readonly maxAcceleration = 1.44
   public readonly maxDeceleration = 4.61
@@ -22,7 +22,7 @@ export class Vehicle {
     leadVehicle: Vehicle | null
     distanceToLeadVehicle: number | null
   }) {
-    const DT = 1 / 60
+    const DT = 1 / 30
 
     // Update position and velocity
     if (this.speed + this.acceleration * DT < 0) {
