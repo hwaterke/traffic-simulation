@@ -27,6 +27,7 @@ default one.
 - [x] Make cars aware of cars on the next road (to avoid crash)
 - [x] Add ability to pause by pressing `p`
 - [x] Add traffic signs
+- [x] Adds a camera to the game allowing to zoom and move around.
 - [ ] Add buttons to toggle debug (road index, node index, node color, road
       direction)
 - [ ] Improve rendering
@@ -47,4 +48,5 @@ default one.
 - [ ] Make a high level data structure that is then translated to low level
       Graph
   - Include road type (one way, number of lanes, speed limit)
-  - Include intersection type (traffic signal or stop signs or right priority)
+  - Include intersection type (traffic signal or stop signs or right priority,
+    give way)

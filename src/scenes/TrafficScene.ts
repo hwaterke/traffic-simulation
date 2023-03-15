@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import {Simulation} from '../simulation/Simulation'
-import {GAME_HEIGHT, GRAPH} from '../constants'
+import {GAME_HEIGHT, GAME_WIDTH, GRAPH} from '../constants'
 import {closestNodeIndex} from '../utils'
 import {CurvedRoad} from '../simulation/CurvedRoad'
 import {Vehicle} from '../simulation/Vehicle'
@@ -28,6 +28,7 @@ export class TrafficScene extends Phaser.Scene {
   private vehicleStats!: Phaser.GameObjects.Text
 
   private isPaused: boolean = false
+  private cameraControls!: Phaser.Cameras.Controls.FixedKeyControl
 
   create(): void {
     this.vehicleGraphics = new Map()
@@ -53,12 +54,14 @@ export class TrafficScene extends Phaser.Scene {
     this.simulation.addTrafficSignals([[39], [13]])
     this.simulation.addTrafficSignals([[27], [38]])
 
+    this.setupCamera()
+
     this.graphics = this.add.graphics()
     this.vehicleStats = this.add.text(10, 10, 'Select a vehicle')
     this.add.text(
       10,
       GAME_HEIGHT - 20,
-      'Shift click an intersection to spawn a vehicle. Press A to randomly add 10.'
+      'Shift click an intersection to spawn a vehicle. Press C to randomly add 10.'
     )
 
     // Monitor the Shift key
@@ -68,8 +71,10 @@ export class TrafficScene extends Phaser.Scene {
 
     // User click
     this.input.on('pointerdown', (pointer: PointerEvent) => {
+      const click = this.cameras.main.getWorldPoint(pointer.x, pointer.y)
+
       // Select the vehicle below the mouse.
-      this.selectedVehicle = this.vehicleAt(pointer.x, pointer.y)
+      this.selectedVehicle = this.vehicleAt(click.x, click.y)
       if (this.selectedVehicle === null) {
         this.vehicleStats.text = 'Select a vehicle'
       }
@@ -79,8 +84,8 @@ export class TrafficScene extends Phaser.Scene {
         // Find the node closest to the pointer position
         const closestNode = closestNodeIndex(
           this.simulation.graph,
-          pointer.x,
-          pointer.y
+          click.x,
+          click.y
         )
         if (closestNode !== null) {
           this.simulation.addVehicle(closestNode)
@@ -88,7 +93,7 @@ export class TrafficScene extends Phaser.Scene {
       }
     })
 
-    this.input.keyboard.on('keydown-A', () => {
+    this.input.keyboard.on('keydown-C', () => {
       for (let i = 0; i < 10; i++) {
         this.simulation.addVehicle(null)
       }
@@ -96,6 +101,7 @@ export class TrafficScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-P', () => {
       this.isPaused = !this.isPaused
     })
+
     this.input.keyboard.on('keydown-T', () => {
       this.simulation.tick()
     })
@@ -117,6 +123,7 @@ export class TrafficScene extends Phaser.Scene {
 
   update(time: number, delta: number) {
     super.update(time, delta)
+    this.cameraControls.update(delta)
 
     // Update the simulation
     if (!this.isPaused) {
@@ -276,6 +283,33 @@ export class TrafficScene extends Phaser.Scene {
           trafficSignalEnd.x,
           trafficSignalEnd.y
         )
+      }
+    })
+  }
+
+  private setupCamera() {
+    // TODO World size should come from the Simulation
+    this.cameras.main.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT)
+
+    this.cameraControls = new Phaser.Cameras.Controls.FixedKeyControl({
+      camera: this.cameras.main,
+      up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+      down: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+      left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+      right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+      speed: 0.5,
+
+      zoomIn: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q),
+      zoomOut: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),
+      zoomSpeed: 0.02,
+    })
+
+    this.input.on('wheel', ({deltaY}: WheelEvent) => {
+      if (deltaY > 0) {
+        this.cameras.main.zoom -= 0.1
+      }
+      if (deltaY < 0) {
+        this.cameras.main.zoom += 0.1
       }
     })
   }
