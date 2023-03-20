@@ -26,15 +26,15 @@ export class Curve<N extends Coordinates> implements ICurve<N> {
   }
 
   getPointAt(positionOnCurve: number): Coordinates {
-    return this.curve.getPointAt(positionOnCurve)
+    return this.curve.getPointAt(positionOnCurve / this.getLength())
   }
 
   getTangentAt(positionOnCurve: number): Coordinates {
-    return this.curve.getTangentAt(positionOnCurve)
+    return this.curve.getTangentAt(positionOnCurve / this.getLength())
   }
 
   getAngleAt(positionOnCurve: number): number {
-    return this.curve.getTangentAt(positionOnCurve).angle()
+    return this.curve.getTangentAt(positionOnCurve / this.getLength()).angle()
   }
 
   getTangentAtSource(): Coordinates {

@@ -8,10 +8,13 @@ const EDGE_WIDTH = 16
 const VEHICLE_WIDTH = 6
 const DEBUG = false
 
+const LANE_WIDTH = 1
+
 const COLOR = {
   ROAD: 0x666666,
-  ROAD_NODE: 0x555555,
+  ROAD_NODE: 0x666666,
   LANE: 0xff0000,
+  LANE_CONNECTIONS: 0x00ff00,
   LANE_NODE: 0x00ff00,
 
   PINK: 0xff00ff,
@@ -33,11 +36,6 @@ export class TrafficScene extends Phaser.Scene {
 
   private isPaused: boolean = false
   private cameraControls!: Phaser.Cameras.Controls.FixedKeyControl
-  private buildMode: {
-    type: string
-    sourceLocation: {x: number; y: number} | null
-    targetLocation: {x: number; y: number} | null
-  } | null = null
 
   create(): void {
     this.vehicleGraphics = new Map()
@@ -55,28 +53,8 @@ export class TrafficScene extends Phaser.Scene {
       },
     })
 
-    this.simulation.addStraightRoad(
-      {x: 20, y: 50},
-      {x: 500, y: 50},
-      ROAD_TYPES.ONE_WAY
-    )
-    this.simulation.addStraightRoad(
-      {x: 20, y: 50},
-      {x: 20, y: 500},
-      ROAD_TYPES.BASIC
-    )
-    this.simulation.addStraightRoad(
-      {x: 20, y: 500},
-      {x: 500, y: 50},
-      ROAD_TYPES.LANES_8,
-      {
-        x: 500,
-        y: 500,
-      }
-    )
-
     // Roundabout
-    this.simulation.addStraightRoad(
+    this.simulation.addRoad(
       {x: 700, y: 450},
       {x: 800, y: 550},
       ROAD_TYPES.LANES_4,
@@ -85,7 +63,7 @@ export class TrafficScene extends Phaser.Scene {
         y: 550,
       }
     )
-    this.simulation.addStraightRoad(
+    this.simulation.addRoad(
       {x: 800, y: 550},
       {x: 900, y: 450},
       ROAD_TYPES.LANES_4,
@@ -94,7 +72,7 @@ export class TrafficScene extends Phaser.Scene {
         y: 550,
       }
     )
-    this.simulation.addStraightRoad(
+    this.simulation.addRoad(
       {x: 900, y: 450},
       {x: 800, y: 350},
       ROAD_TYPES.LANES_4,
@@ -103,7 +81,7 @@ export class TrafficScene extends Phaser.Scene {
         y: 350,
       }
     )
-    this.simulation.addStraightRoad(
+    this.simulation.addRoad(
       {x: 800, y: 350},
       {x: 700, y: 450},
       ROAD_TYPES.LANES_4,
@@ -114,19 +92,19 @@ export class TrafficScene extends Phaser.Scene {
     )
 
     // Below roundabout
-    this.simulation.addStraightRoad(
+    this.simulation.addRoad(
       {x: 800, y: 550},
       {x: 800, y: 650},
       ROAD_TYPES.BASIC
     )
     // Left of roundabout
-    this.simulation.addStraightRoad(
+    this.simulation.addRoad(
       {x: 700, y: 450},
       {x: 600, y: 450},
       ROAD_TYPES.BASIC
     )
     // Connect the two
-    this.simulation.addStraightRoad(
+    this.simulation.addRoad(
       {x: 800, y: 650},
       {x: 600, y: 450},
       ROAD_TYPES.LANES_8,
@@ -136,36 +114,36 @@ export class TrafficScene extends Phaser.Scene {
       }
     )
     // Right of roundabout
-    this.simulation.addStraightRoad(
+    this.simulation.addRoad(
       {x: 900, y: 450},
       {x: 1000, y: 450},
       ROAD_TYPES.BASIC
     )
-    this.simulation.addStraightRoad(
+    this.simulation.addRoad(
       {x: 1000, y: 450},
       {x: 800, y: 650},
       ROAD_TYPES.BASIC
     )
 
-    this.simulation.addStraightRoad(
+    this.simulation.addRoad(
       {x: 800, y: 650},
       {x: 800, y: 850},
       ROAD_TYPES.BASIC
     )
 
-    this.simulation.addStraightRoad(
+    this.simulation.addRoad(
       {x: 800, y: 650},
       {x: 1000, y: 850},
       ROAD_TYPES.BASIC
     )
 
-    this.simulation.addStraightRoad(
+    this.simulation.addRoad(
       {x: 800, y: 850},
       {x: 1000, y: 850},
       ROAD_TYPES.BASIC
     )
 
-    this.simulation.addStraightRoad(
+    this.simulation.addRoad(
       {x: 1000, y: 450},
       {x: 1000, y: 850},
       ROAD_TYPES.LANES_8,
@@ -205,22 +183,6 @@ export class TrafficScene extends Phaser.Scene {
     this.input.on('pointerdown', (pointer: PointerEvent) => {
       const click = this.cameras.main.getWorldPoint(pointer.x, pointer.y)
 
-      // Are we building ?
-      if (this.buildMode) {
-        if (this.buildMode.type === 'road') {
-          if (!this.buildMode.sourceLocation) {
-            this.buildMode.sourceLocation = {x: click.x, y: click.y}
-            return
-          }
-          if (!this.buildMode.targetLocation) {
-            this.buildMode.targetLocation = {x: click.x, y: click.y}
-            // Actually build it
-          }
-        }
-
-        return
-      }
-
       // Select the vehicle below the mouse.
       this.selectedVehicle = this.vehicleAt(click.x, click.y)
       if (this.selectedVehicle === null) {
@@ -230,31 +192,9 @@ export class TrafficScene extends Phaser.Scene {
       // Did the user select a node to spawn a new vehicle?
       if (this.input.keyboard.checkDown(shift)) {
         // Find the node closest to the pointer position
-        /*
-
-        const closestNode = closestNodeIndex(
-          this.simulation.graph,
-          click.x,
-          click.y
-        )
+        const closestNode = this.simulation.findNodeAt(click, 10)
         if (closestNode !== null) {
           this.simulation.addVehicle(closestNode)
-        }
-
-         */
-      }
-    })
-
-    this.input.keyboard.on('keydown-B', () => {
-      if (this.buildMode) {
-        // TODO Delete all the graphics linked to the build...
-        this.buildMode = null
-      } else {
-        // Enter or leave build mode
-        this.buildMode = {
-          type: 'road',
-          sourceLocation: null,
-          targetLocation: null,
         }
       }
     })
@@ -316,13 +256,15 @@ export class TrafficScene extends Phaser.Scene {
 
   private vehicleAt(x: number, y: number): Vehicle | null {
     for (const road of this.simulation.roads) {
-      for (const vehicle of road.vehicles) {
-        const vehiclePosition = road.getPoint(vehicle.x)
-        if (
-          Math.abs(vehiclePosition.x - x) < vehicle.length &&
-          Math.abs(vehiclePosition.y - y) < vehicle.length
-        ) {
-          return vehicle
+      for (const lane of road.lanes) {
+        for (const vehicle of lane.vehicles) {
+          const vehiclePosition = lane.getPointAt(vehicle.x)
+          if (
+            Math.abs(vehiclePosition.x - x) < vehicle.length &&
+            Math.abs(vehiclePosition.y - y) < vehicle.length
+          ) {
+            return vehicle
+          }
         }
       }
     }
@@ -344,14 +286,14 @@ export class TrafficScene extends Phaser.Scene {
   }
 
   private drawRoadNodes() {
-    this.graphics.fillStyle(COLOR.ROAD_NODE, 0.8)
+    this.graphics.fillStyle(COLOR.ROAD_NODE)
     this.simulation.nodes.forEach((node) => {
-      this.graphics.fillCircle(node.x, node.y, node.size())
+      this.graphics.fillCircle(node.x, node.y, node.size() / 2)
     })
   }
 
   private drawLanes() {
-    this.graphics.lineStyle(1, COLOR.LANE, 1)
+    this.graphics.lineStyle(LANE_WIDTH, COLOR.LANE, 1)
     this.simulation.roads.forEach((road) => {
       road.lanes.forEach((lane) => {
         lane.curve.draw(this.graphics)
@@ -360,7 +302,7 @@ export class TrafficScene extends Phaser.Scene {
   }
 
   private drawLaneConnections() {
-    this.graphics.lineStyle(1, 0x00ff00, 1)
+    this.graphics.lineStyle(LANE_WIDTH, COLOR.LANE_CONNECTIONS, 1)
     this.simulation.nodes.forEach((node) => {
       node.connectionLanes.forEach((lane) => {
         lane.curve.draw(this.graphics)

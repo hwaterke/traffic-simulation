@@ -7,6 +7,7 @@ import {
   getParallelCurvePoints,
   getParallelLinePoints,
   hermiteToBezier,
+  randomElement,
   shortenCurveSegment,
   shortenLineSegment,
 } from '../utils'
@@ -26,31 +27,31 @@ export const ROAD_TYPES = {
   LANES_4: {
     lanes: [
       {offset: 4, isReversed: false},
-      {offset: 8, isReversed: false},
+      {offset: 12, isReversed: false},
       {offset: -4, isReversed: true},
-      {offset: -8, isReversed: true},
+      {offset: -12, isReversed: true},
     ],
   },
   LANES_6: {
     lanes: [
       {offset: 4, isReversed: false},
-      {offset: 8, isReversed: false},
       {offset: 12, isReversed: false},
+      {offset: 20, isReversed: false},
       {offset: -4, isReversed: true},
-      {offset: -8, isReversed: true},
       {offset: -12, isReversed: true},
+      {offset: -20, isReversed: true},
     ],
   },
   LANES_8: {
     lanes: [
       {offset: 4, isReversed: false},
-      {offset: 8, isReversed: false},
       {offset: 12, isReversed: false},
-      {offset: 16, isReversed: false},
+      {offset: 20, isReversed: false},
+      {offset: 28, isReversed: false},
       {offset: -4, isReversed: true},
-      {offset: -8, isReversed: true},
       {offset: -12, isReversed: true},
-      {offset: -16, isReversed: true},
+      {offset: -20, isReversed: true},
+      {offset: -28, isReversed: true},
     ],
   },
 } as const satisfies Record<string, RoadType>
@@ -184,144 +185,148 @@ export class Simulation {
   constructor(private options: SimulationOptions) {}
 
   tick() {
-    /*
-    // Update position of each vehicle within each route
     this.roads.forEach((road) => {
-      // Move vehicles along the road
-      road.vehicles.forEach((vehicle, index) => {
-        const leadVehicle = this.findDistanceToLeadVehicle({
-          path: vehicle.path,
-          currentRoadIndex: vehicle.currentRoadIndex,
-          vehicleIndex: index,
-        })
-
-        if (leadVehicle === null) {
-          vehicle.tick({leadVehicle: null, distanceToLeadVehicle: null})
-        } else {
-          vehicle.tick({
-            leadVehicle: leadVehicle.leadVehicle,
-            distanceToLeadVehicle: leadVehicle.distance,
-          })
-        }
-
-        // For the first vehicle check if the traffic signal is there and red
-        if (index === 0) {
-          if (road.redLight()) {
-            // In the stop zone ?
-            if (
-              vehicle.x >=
-              road.getLength() - road.trafficSignal!.stopDistance
-            ) {
-              vehicle.shouldStop = true
-            } else if (
-              vehicle.x >=
-              road.getLength() - road.trafficSignal!.slowDistance
-            ) {
-              vehicle.maxSpeed = 6 // Max speed of 15 in slow zone
-            }
-          } else {
-            vehicle.maxSpeed = vehicle.engineMaxSpeed // No need to slow down
-            vehicle.shouldStop = false
-          }
-        } else {
-          // Make sure no vehicles are slowed down
-          vehicle.maxSpeed = vehicle.engineMaxSpeed
-          vehicle.shouldStop = false
-        }
-      })
-
-      // Make sure the first vehicle is not at the end of the road
-      if (road.vehicles.length > 0) {
-        const leadVehicle = road.vehicles[0]
-        if (leadVehicle.x > road.getLength()) {
-          // Move the vehicle to the next road
-          leadVehicle.x = 0
-          leadVehicle.currentRoadIndex++
-
-          // Remove the vehicle from the current road
-          road.vehicles.shift()
-
-          if (leadVehicle.currentRoadIndex < leadVehicle.path.length) {
-            // Add the vehicle to the next road
-            const nextRoad =
-              this.roads[leadVehicle.path[leadVehicle.currentRoadIndex]]
-            nextRoad.vehicles.push(leadVehicle)
-          } else {
-            this.options.onVehicleRemoved(leadVehicle)
-          }
-        }
-      }
+      road.lanes.forEach((lane) => this.tickLaneVehicles(lane))
     })
-
-     */
+    this.nodes.forEach((node) => {
+      node.connectionLanes.forEach((lane) => this.tickLaneVehicles(lane))
+    })
 
     this.trafficSignals.forEach((trafficSignal) => {
       trafficSignal.update()
     })
   }
 
-  // Add a vehicle on a road.
-  addVehicle(sourceNode: number | null) {
-    /*
-    const sourceNodeIndex =
-      sourceNode ?? Math.floor(Math.random() * this.graph.nodes.length)
-    const targetNodeIndex = Math.floor(Math.random() * this.graph.nodes.length)
-
-    const path = dijkstra(this.graph, sourceNodeIndex, targetNodeIndex)
-
-    if (path && path.length > 0) {
-      const road = this.roads[path[0]]
-      const v = new Vehicle()
-
-      // Do we have space to spawn a vehicle on this road?
-      const firstVehicle = this.findFirstVehicle({
-        path,
-        currentRoadIndex: 0,
+  private tickLaneVehicles(lane: Lane) {
+    lane.vehicles.forEach((vehicle, vehicleIndex) => {
+      const leadVehicle = this.findDistanceToLeadVehicle({
+        path: vehicle.path,
+        currentLaneIndex: vehicle.currentLaneIndex,
+        vehicleIndex,
       })
 
-      if (
-        firstVehicle === null ||
-        v.length / 2 <
-          firstVehicle.distanceToVehicle - firstVehicle.vehicle.length / 2
-      ) {
-        v.path = path
-        road.vehicles.push(v)
-        this.options.onVehicleAdded(v)
-        return true
+      if (leadVehicle === null) {
+        vehicle.tick({leadVehicle: null, distanceToLeadVehicle: null})
+      } else {
+        vehicle.tick({
+          leadVehicle: leadVehicle.leadVehicle,
+          distanceToLeadVehicle: leadVehicle.distance,
+        })
+      }
+
+      /*
+      // TODO For the first vehicle check if the traffic signal is there and red
+      if (vehicleIndex === 0) {
+        if (road.redLight()) {
+          // In the stop zone ?
+          if (
+            vehicle.x >=
+            road.getLength() - road.trafficSignal!.stopDistance
+          ) {
+            vehicle.shouldStop = true
+          } else if (
+            vehicle.x >=
+            road.getLength() - road.trafficSignal!.slowDistance
+          ) {
+            vehicle.maxSpeed = 6 // Max speed of 15 in slow zone
+          }
+        } else {
+          vehicle.maxSpeed = vehicle.engineMaxSpeed // No need to slow down
+          vehicle.shouldStop = false
+        }
+      } else {
+        // Make sure no vehicles are slowed down
+        vehicle.maxSpeed = vehicle.engineMaxSpeed
+        vehicle.shouldStop = false
+      }
+
+       */
+
+      // Make sure the first vehicle is not at the end of the road
+      if (lane.vehicles.length > 0) {
+        const leadVehicle = lane.vehicles[0]
+
+        if (leadVehicle.x > lane.getLength()) {
+          // Move the vehicle to the next road
+          leadVehicle.x = 0 // leadVehicle.x - lane.getLength()
+          leadVehicle.currentLaneIndex++
+
+          // Remove the vehicle from the current road
+          lane.vehicles.shift()
+
+          if (leadVehicle.currentLaneIndex < leadVehicle.path.length) {
+            // Add the vehicle to the next road
+            const nextLane = leadVehicle.path[leadVehicle.currentLaneIndex]
+            nextLane.vehicles.push(leadVehicle)
+          } else {
+            this.options.onVehicleRemoved(leadVehicle)
+            console.log('Vehicle reached end of path, removing')
+          }
+        }
+      }
+    })
+  }
+
+  // Add a vehicle on a road.
+  addVehicle(sourceNode: RoadNode | null) {
+    const source = sourceNode ?? randomElement(this.nodes)
+    const target = randomElement(this.nodes)
+
+    if (source !== target) {
+      const path = this.findPath(source, target)
+      if (path && path.length > 0) {
+        const startingLane = path[0]
+        const v = new Vehicle()
+
+        // Do we have space to spawn a vehicle on this road?
+        const firstVehicle = this.findFirstVehicle({
+          path,
+          currentLaneIndex: 0,
+        })
+
+        if (
+          firstVehicle === null ||
+          v.length / 2 <
+            firstVehicle.distanceToVehicle - firstVehicle.vehicle.length / 2
+        ) {
+          v.path = path
+          startingLane.vehicles.push(v)
+          this.options.onVehicleAdded(v)
+          return v
+        }
       }
     }
-    return false
 
-     */
+    return null
   }
 
   // Finds the first vehicle on the provided path.
   findFirstVehicle({
     path,
-    currentRoadIndex,
+    currentLaneIndex,
   }: {
-    path: number[]
-    currentRoadIndex: number
+    path: Lane[]
+    currentLaneIndex: number
   }): {
-    road: Road
+    lane: Lane
     vehicle: Vehicle
     distanceToVehicle: number
   } | null {
     let distanceToVehicle = 0
 
-    while (currentRoadIndex < path.length) {
-      const road = this.roads[path[currentRoadIndex]]
-      if (road.vehicles.length > 0) {
-        const firstVehicle = road.vehicles[road.vehicles.length - 1]
+    while (currentLaneIndex < path.length) {
+      const lane = path[currentLaneIndex]
+      if (lane.vehicles.length > 0) {
+        const firstVehicle = lane.vehicles[lane.vehicles.length - 1]
 
         return {
           distanceToVehicle: distanceToVehicle + firstVehicle.x,
-          road,
+          lane,
           vehicle: firstVehicle,
         }
       }
-      distanceToVehicle += road.getLength()
-      currentRoadIndex++
+      distanceToVehicle += lane.getLength()
+      currentLaneIndex++
     }
 
     return null
@@ -329,21 +334,21 @@ export class Simulation {
 
   findDistanceToLeadVehicle({
     path,
-    currentRoadIndex,
+    currentLaneIndex,
     vehicleIndex,
   }: {
-    path: number[]
-    currentRoadIndex: number
+    path: Lane[]
+    currentLaneIndex: number
     vehicleIndex: number
   }): {
     leadVehicle: Vehicle
     distance: number
   } | null {
-    const road = this.roads[path[currentRoadIndex]]
-    const vehicle = road.vehicles[vehicleIndex]
+    const lane = path[currentLaneIndex]
+    const vehicle = lane.vehicles[vehicleIndex]
 
     if (vehicleIndex > 0) {
-      const leadVehicle = road.vehicles[vehicleIndex - 1]
+      const leadVehicle = lane.vehicles[vehicleIndex - 1]
       return {
         leadVehicle,
         distance:
@@ -357,11 +362,11 @@ export class Simulation {
     // First vehicle on its road.
     const leadVehicle = this.findFirstVehicle({
       path,
-      currentRoadIndex: currentRoadIndex + 1,
+      currentLaneIndex: currentLaneIndex + 1,
     })
 
     if (leadVehicle) {
-      const distanceToEndOfRoute = road.getLength() - vehicle.x
+      const distanceToEndOfRoute = lane.getLength() - vehicle.x
 
       return {
         leadVehicle: leadVehicle.vehicle,
@@ -387,7 +392,7 @@ export class Simulation {
     })
   }
 
-  addStraightRoad(
+  addRoad(
     source: Coordinates,
     target: Coordinates,
     type: RoadType,
@@ -525,7 +530,7 @@ export class Simulation {
     generateConnectionLane(targetNode)
   }
 
-  private findNodeAt(
+  public findNodeAt(
     coordinates: Coordinates,
     thresholdDistance: number
   ): RoadNode | null {
@@ -575,7 +580,14 @@ export class Simulation {
 
     // Dijkstra from any outgoing lane to the target node (incoming lane node)
 
-    return null
+    // TODO Dijkstra
+    const start = randomElement(source.getOutgoingLanes())
+    const path = [start]
+    for (let i = 0; i < 5; i++) {
+      const lane = randomElement(this.lanesFrom(path[path.length - 1].target))
+      path.push(lane)
+    }
+    return path
   }
 
   /**
@@ -609,8 +621,8 @@ export class Simulation {
           parallel.source,
           parallel.control,
           parallel.target,
-          road.source.size(),
-          road.target.size()
+          road.source.size() / 2,
+          road.target.size() / 2
         )
 
         new Phaser.Curves.Spline()
@@ -644,8 +656,8 @@ export class Simulation {
         const shortened = shortenLineSegment(
           source,
           target,
-          road.source.size(),
-          road.target.size()
+          road.source.size() / 2,
+          road.target.size() / 2
         )
 
         // Update the lane nodes

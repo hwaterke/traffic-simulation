@@ -25,7 +25,7 @@ export class Vehicle {
     leadVehicle: Vehicle | null
     distanceToLeadVehicle: number | null
   }) {
-    const DT = 1 / 30
+    const DT = 1 / 60
 
     // Update position and velocity
     if (this.speed + this.acceleration * DT < 0) {

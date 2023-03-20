@@ -176,15 +176,16 @@ export const hermiteToBezier = (
 ): Coordinates[] => {
   const dx = Math.abs(end.x - start.x)
   const dy = Math.abs(end.y - start.y)
+  const size = Math.sqrt(dx * dx + dy * dy)
 
   // Compute the first control point for each end
   const c1 = {
-    x: start.x + (dx * startTangent.x) / 3,
-    y: start.y + (dy * startTangent.y) / 3,
+    x: start.x + (size * startTangent.x) / 3,
+    y: start.y + (size * startTangent.y) / 3,
   }
   const c2 = {
-    x: end.x - (dx * endTangent.x) / 3,
-    y: end.y - (dy * endTangent.y) / 3,
+    x: end.x - (size * endTangent.x) / 3,
+    y: end.y - (size * endTangent.y) / 3,
   }
 
   // Construct and return the control points as an array
