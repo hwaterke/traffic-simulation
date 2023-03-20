@@ -1,5 +1,6 @@
-import {Node} from '../types'
+import {RoadType} from '../types'
 import {Road} from './Road'
+import {RoadNode} from './Simulation'
 
 export class LinearRoad extends Road {
   protected length: number
@@ -7,8 +8,12 @@ export class LinearRoad extends Road {
   private readonly angleCos: number
   private readonly angle: number
 
-  constructor(public source: Node, public target: Node) {
-    super(source, target)
+  constructor(
+    public source: RoadNode,
+    public target: RoadNode,
+    type: RoadType
+  ) {
+    super(source, target, type)
 
     this.length = Phaser.Math.Distance.Between(
       source.x,

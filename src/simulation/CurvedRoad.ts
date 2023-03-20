@@ -1,17 +1,19 @@
 import {Road} from './Road'
-import {Node} from '../types'
+import {RoadType} from '../types'
 import Phaser from 'phaser'
+import {RoadNode} from './Simulation'
 
 export class CurvedRoad extends Road {
   public readonly curve: Phaser.Curves.QuadraticBezier
   private readonly length: number
 
   constructor(
-    public source: Node,
-    public target: Node,
-    control: [number, number]
+    public source: RoadNode,
+    public target: RoadNode,
+    control: [number, number],
+    type: RoadType
   ) {
-    super(source, target)
+    super(source, target, type)
 
     this.curve = new Phaser.Curves.QuadraticBezier(
       new Phaser.Math.Vector2(source.x, source.y),
