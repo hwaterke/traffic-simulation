@@ -1,7 +1,7 @@
 import Phaser from 'phaser'
 import {Coordinates} from '../types'
 
-export interface Curve<N extends Coordinates> {
+export interface ICurve<N extends Coordinates> {
   source: N
   target: N
   getLength(): number
@@ -10,14 +10,11 @@ export interface Curve<N extends Coordinates> {
   getTangentAt(positionOnCurve: number): Coordinates
   getTangentAtSource(): Coordinates
   getTangentAtTarget(): Coordinates
-
-  shiftRight(distance: number): Curve<N>
-  trim(distanceFromStart: number, distanceFromEnd: number): Curve<N>
-
+  getAngleAt(positionOnCurve: number): number
   curve: Phaser.Curves.Curve
 }
 
-abstract class BaseCurve<N extends Coordinates> implements Curve<N> {
+export class Curve<N extends Coordinates> implements ICurve<N> {
   constructor(
     public readonly source: N,
     public readonly target: N,
@@ -36,39 +33,15 @@ abstract class BaseCurve<N extends Coordinates> implements Curve<N> {
     return this.curve.getTangentAt(positionOnCurve)
   }
 
+  getAngleAt(positionOnCurve: number): number {
+    return this.curve.getTangentAt(positionOnCurve).angle()
+  }
+
   getTangentAtSource(): Coordinates {
     return this.curve.getTangentAt(0)
   }
 
   getTangentAtTarget(): Coordinates {
     return this.curve.getTangentAt(1)
-  }
-
-  abstract shiftRight(distance: number): Curve<N>
-
-  abstract trim(distanceFromStart: number, distanceFromEnd: number): Curve<N>
-}
-
-export class StraightCurve<N extends Coordinates> extends BaseCurve<N> {
-  shiftRight(distance: number): Curve<N> {
-    // TODO Implement
-    return this
-  }
-
-  trim(distanceFromStart: number, distanceFromEnd: number): Curve<N> {
-    // TODO Implement
-    return this
-  }
-}
-
-export class QuadraticBezierCurve<N extends Coordinates> extends BaseCurve<N> {
-  shiftRight(distance: number): Curve<N> {
-    // TODO Implement
-    return this
-  }
-
-  trim(distanceFromStart: number, distanceFromEnd: number): Curve<N> {
-    // TODO Implement
-    return this
   }
 }

@@ -1,20 +1,22 @@
 import {TrafficSignal} from '../TrafficSignal'
 import {RoadType} from '../types'
-import {Vehicle} from './Vehicle'
 import {Lane, RoadNode} from './Simulation'
+import {Curve} from './Curve'
+import Phaser from 'phaser'
 
-export abstract class Road {
+export class Road extends Curve<RoadNode> {
   public lanes: Lane[] = []
-  // List of vehicles on the road. Ordered by distance on the road DESC.
-  public vehicles: Vehicle[] = []
   public trafficSignal: TrafficSignal | null = null
   public trafficSignalGroupIndex: number | null = null
 
-  protected constructor(
-    public source: RoadNode,
-    public target: RoadNode,
+  constructor(
+    source: RoadNode,
+    target: RoadNode,
+    curve: Phaser.Curves.Curve,
     public readonly type: RoadType
-  ) {}
+  ) {
+    super(source, target, curve)
+  }
 
   getWidth() {
     return (
@@ -28,12 +30,6 @@ export abstract class Road {
     )
   }
 
-  abstract getLength(): number
-
-  abstract getPoint(positionOnRoad: number): {x: number; y: number}
-
-  abstract getAngle(positionOnRoad: number): number
-
   setTrafficSignal(signal: TrafficSignal, groupIndex: number) {
     this.trafficSignal = signal
     this.trafficSignalGroupIndex = groupIndex
@@ -44,11 +40,5 @@ export abstract class Road {
       return this.trafficSignal.isGroupStopped(this.trafficSignalGroupIndex!)
     }
     return false
-  }
-
-  protected assertValidPositionOnRoad(positionOnRoad: number): void {
-    if (positionOnRoad < 0 || positionOnRoad > this.getLength()) {
-      throw new Error('Invalid location on road')
-    }
   }
 }

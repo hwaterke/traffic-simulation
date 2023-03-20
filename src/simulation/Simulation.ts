@@ -10,10 +10,8 @@ import {
   shortenCurveSegment,
   shortenLineSegment,
 } from '../utils'
-import {LinearRoad} from './LinearRoad'
-import {CurvedRoad} from './CurvedRoad'
 import Phaser from 'phaser'
-import {Curve, QuadraticBezierCurve, StraightCurve} from './Curve'
+import {Curve} from './Curve'
 
 export const ROAD_TYPES = {
   ONE_WAY: {
@@ -62,7 +60,9 @@ type SimulationOptions = {
   onVehicleRemoved: (vehicle: Vehicle) => void
 }
 
-export interface Lane extends Curve<LaneNode> {}
+export class Lane extends Curve<LaneNode> {
+  public vehicles: Vehicle[] = []
+}
 
 export class RoadNode implements Coordinates {
   private _size = 0
@@ -184,6 +184,7 @@ export class Simulation {
   constructor(private options: SimulationOptions) {}
 
   tick() {
+    /*
     // Update position of each vehicle within each route
     this.roads.forEach((road) => {
       // Move vehicles along the road
@@ -251,6 +252,8 @@ export class Simulation {
         }
       }
     })
+
+     */
 
     this.trafficSignals.forEach((trafficSignal) => {
       trafficSignal.update()
@@ -400,13 +403,25 @@ export class Simulation {
 
     // Create the new Road between the two nodes.
     const road = controlCoordinates
-      ? new CurvedRoad(
+      ? new Road(
           sourceNode,
           targetNode,
-          [controlCoordinates.x, controlCoordinates.y],
+          new Phaser.Curves.QuadraticBezier(
+            new Phaser.Math.Vector2(sourceNode.x, sourceNode.y),
+            new Phaser.Math.Vector2(controlCoordinates.x, controlCoordinates.y),
+            new Phaser.Math.Vector2(targetNode.x, targetNode.y)
+          ),
           type
         )
-      : new LinearRoad(sourceNode, targetNode, type)
+      : new Road(
+          sourceNode,
+          targetNode,
+          new Phaser.Curves.Line(
+            new Phaser.Math.Vector2(sourceNode.x, sourceNode.y),
+            new Phaser.Math.Vector2(targetNode.x, targetNode.y)
+          ),
+          type
+        )
     this.roads.push(road)
 
     // Let the RoadNode know about this new Road
@@ -428,19 +443,19 @@ export class Simulation {
         : laneNodeAtTargetRoadNode
 
       const lane: Lane = controlCoordinates
-        ? new QuadraticBezierCurve(
+        ? new Lane(
             laneSource,
             laneTarget,
             new Phaser.Curves.QuadraticBezier(
-              new Phaser.Math.Vector2(laneSource.x, laneTarget.y),
+              new Phaser.Math.Vector2(laneSource.x, laneSource.y),
               new Phaser.Math.Vector2(
                 controlCoordinates.x,
                 controlCoordinates.y
               ),
-              new Phaser.Math.Vector2(laneSource.x, laneTarget.y)
+              new Phaser.Math.Vector2(laneTarget.x, laneTarget.y)
             )
           )
-        : new StraightCurve(
+        : new Lane(
             laneSource,
             laneTarget,
             new Phaser.Curves.Line(
@@ -487,7 +502,7 @@ export class Simulation {
             )
 
             node.connectionLanes.push(
-              new StraightCurve(
+              new Lane(
                 incomingNode,
                 outgoingNode,
                 new Phaser.Curves.CubicBezier(
@@ -537,22 +552,18 @@ export class Simulation {
   }
 
   private lanesFrom(node: LaneNode): Lane[] {
-    const result: Lane[] = []
-
     // TODO Improve internal data structure to get this in O(1)
-
+    const result: Lane[] = []
     result.push(
       ...this.roads.flatMap((road) => {
         return road.lanes.filter((lane) => lane.source == node)
       })
     )
-
     result.push(
       ...this.nodes.flatMap((roadNode) => {
         return roadNode.connectionLanes.filter((lane) => lane.source === node)
       })
     )
-
     return result
   }
 
@@ -584,7 +595,7 @@ export class Simulation {
       const lane = road.lanes[index]
 
       if (
-        road instanceof CurvedRoad &&
+        road.curve instanceof Phaser.Curves.QuadraticBezier &&
         lane.curve instanceof Phaser.Curves.QuadraticBezier
       ) {
         const parallel = getParallelCurvePoints(

@@ -1,10 +1,13 @@
+import {Lane} from './Simulation'
+
 export class Vehicle {
-  public x = 0 // Position along its current road (0 to road length)
+  public x = 0 // Position along its current Lane [0;lane length]
   public speed = 0
   public acceleration = 0
 
-  public path: number[] = [] // List of road indexes
-  public currentRoadIndex = 0
+  public path: Lane[] = []
+  public currentLaneIndex = 0
+
   public shouldStop: boolean = false
 
   public readonly length = 10 + Math.random() * 10 // Length of the vehicle
@@ -40,9 +43,7 @@ export class Vehicle {
       const speedDifference = this.speed - leadVehicle.speed
 
       if (distanceToLeadVehicle <= 0) {
-        console.log(
-          `Vehicle crashed. Road: ${this.path[this.currentRoadIndex]}`
-        )
+        console.log(`Vehicle crashed.`)
         // Vehicle crashed into each other.
         this.speed = 0
         this.acceleration = 0
@@ -70,5 +71,9 @@ export class Vehicle {
       // We do not care if the acceleration stays negative as we do not allow the speed to go below 0
       this.acceleration = -this.maxDeceleration
     }
+  }
+
+  getCurrentLane(): Lane | null {
+    return this.path.length > 0 ? this.path[this.currentLaneIndex] : null
   }
 }

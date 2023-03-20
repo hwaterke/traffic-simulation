@@ -1,7 +1,6 @@
 import Phaser from 'phaser'
-import {ROAD_TYPES, Simulation} from '../simulation/Simulation'
+import {Lane, ROAD_TYPES, Simulation} from '../simulation/Simulation'
 import {GAME_HEIGHT, GAME_WIDTH} from '../constants'
-import {CurvedRoad} from '../simulation/CurvedRoad'
 import {Vehicle} from '../simulation/Vehicle'
 
 const LANE_NODE_RADIUS = 3
@@ -24,6 +23,8 @@ const COLOR = {
 export class TrafficScene extends Phaser.Scene {
   private simulation!: Simulation
   private graphics!: Phaser.GameObjects.Graphics
+
+  // TODO this is never cleaned up !
   private vehicleGraphics: Map<Vehicle, Phaser.GameObjects.Graphics> = new Map()
 
   // Vehicle selected by the user. (used to display debug info)
@@ -309,70 +310,7 @@ export class TrafficScene extends Phaser.Scene {
     this.drawLanes()
     this.drawLaneConnections()
     this.drawLaneNodes()
-
-    // Draw vehicles
-    this.graphics.fillStyle(0xff0000, 1)
-
-    // Find the lead vehicle of the selected vehicle
-    let leadVehicleDistance: {leadVehicle: Vehicle; distance: number} | null =
-      null
-    if (this.selectedVehicle) {
-      // Find the index of the selected vehicle on his road.
-      const road =
-        this.simulation.roads[
-          this.selectedVehicle.path[this.selectedVehicle.currentRoadIndex]
-        ]
-      const vehicleIndex = road.vehicles.indexOf(this.selectedVehicle)
-      leadVehicleDistance = this.simulation.findDistanceToLeadVehicle({
-        path: this.selectedVehicle.path,
-        currentRoadIndex: this.selectedVehicle.currentRoadIndex,
-        vehicleIndex,
-      })
-    }
-
-    this.simulation.roads.forEach((road) => {
-      road.vehicles.forEach((vehicle, vehicleIndex) => {
-        const vehicleGraphics = this.vehicleGraphics.get(vehicle)!
-        vehicleGraphics.clear()
-
-        const vehiclePosition = road.getPoint(vehicle.x)
-        vehicleGraphics.x = vehiclePosition.x
-        vehicleGraphics.y = vehiclePosition.y
-
-        if (vehicle.acceleration < -0.001) {
-          vehicleGraphics.fillStyle(0xff0000, 1)
-        } else if (vehicle.acceleration > 0.001) {
-          vehicleGraphics.fillStyle(0x00ff00, 1)
-        } else {
-          vehicleGraphics.fillStyle(0xffff00, 1)
-        }
-
-        if (this.selectedVehicle === vehicle) {
-          vehicleGraphics.fillStyle(COLOR.PINK)
-          this.vehicleStats.text = `Speed: ${vehicle.speed}\nMax speed: ${
-            vehicle.maxSpeed
-          }\nEngine max speed: ${vehicle.engineMaxSpeed}\nAcceleration: ${
-            vehicle.acceleration
-          }\nDistance to lead vehicle: ${
-            leadVehicleDistance?.distance ?? 'NA'
-          }\nIndex on road: ${vehicleIndex}`
-          this.drawPath(vehicle.path)
-        }
-        if (leadVehicleDistance?.leadVehicle === vehicle) {
-          vehicleGraphics.fillStyle(COLOR.TEAL)
-        }
-
-        vehicleGraphics.fillRoundedRect(
-          -vehicle.length / 2,
-          -VEHICLE_WIDTH / 2,
-          vehicle.length,
-          VEHICLE_WIDTH,
-          2
-        )
-        vehicleGraphics.rotation = road.getAngle(vehicle.x)
-      })
-    })
-
+    this.drawVehicles()
     this.drawTrafficSignals()
   }
 
@@ -391,47 +329,22 @@ export class TrafficScene extends Phaser.Scene {
     return null
   }
 
-  private drawPath(path: number[]) {
+  private drawPath(path: Lane[]) {
     this.graphics.lineStyle(1, COLOR.PINK)
-    path.forEach((roadIndex) => {
-      const road = this.simulation.roads[roadIndex]
-      const startNode = road.source
-      const endNode = road.target
-      if (road instanceof CurvedRoad) {
-        road.curve.draw(this.graphics)
-      } else {
-        this.graphics.lineBetween(
-          startNode.x,
-          startNode.y,
-          endNode.x,
-          endNode.y
-        )
-      }
+    path.forEach((lane) => {
+      lane.curve.draw(this.graphics)
     })
   }
 
   private drawRoads() {
     this.simulation.roads.forEach((road) => {
-      const startNode = road.source
-      const endNode = road.target
-
       this.graphics.lineStyle(road.getWidth(), COLOR.ROAD, 1)
-
-      if (road instanceof CurvedRoad) {
-        road.curve.draw(this.graphics)
-      } else {
-        this.graphics.lineBetween(
-          startNode.x,
-          startNode.y,
-          endNode.x,
-          endNode.y
-        )
-      }
+      road.curve.draw(this.graphics)
     })
   }
 
   private drawRoadNodes() {
-    this.graphics.fillStyle(COLOR.ROAD_NODE, 0.4)
+    this.graphics.fillStyle(COLOR.ROAD_NODE, 0.8)
     this.simulation.nodes.forEach((node) => {
       this.graphics.fillCircle(node.x, node.y, node.size())
     })
@@ -441,18 +354,7 @@ export class TrafficScene extends Phaser.Scene {
     this.graphics.lineStyle(1, COLOR.LANE, 1)
     this.simulation.roads.forEach((road) => {
       road.lanes.forEach((lane) => {
-        if (lane.curve) {
-          lane.curve.draw(this.graphics)
-        } else {
-          const startNode = lane.source
-          const endNode = lane.target
-          this.graphics.lineBetween(
-            startNode.x,
-            startNode.y,
-            endNode.x,
-            endNode.y
-          )
-        }
+        lane.curve.draw(this.graphics)
       })
     })
   }
@@ -493,8 +395,8 @@ export class TrafficScene extends Phaser.Scene {
           this.graphics.lineStyle(EDGE_WIDTH + 2, COLOR.GREEN_SIGNAL)
         }
 
-        const trafficSignalStart = road.getPoint(road.getLength())
-        const trafficSignalEnd = road.getPoint(road.getLength() - 5)
+        const trafficSignalStart = road.getPointAt(road.getLength())
+        const trafficSignalEnd = road.getPointAt(road.getLength() - 5)
 
         this.graphics.lineBetween(
           trafficSignalStart.x,
@@ -503,6 +405,75 @@ export class TrafficScene extends Phaser.Scene {
           trafficSignalEnd.y
         )
       }
+    })
+  }
+
+  private drawLaneVehicles(lane: Lane) {
+    lane.vehicles.forEach((vehicle, vehicleIndex) => {
+      const vehicleGraphics = this.vehicleGraphics.get(vehicle)!
+      vehicleGraphics.clear()
+
+      const vehiclePosition = lane.getPointAt(vehicle.x)
+      vehicleGraphics.x = vehiclePosition.x
+      vehicleGraphics.y = vehiclePosition.y
+
+      if (vehicle.acceleration < -0.001) {
+        vehicleGraphics.fillStyle(0xff0000, 1)
+      } else if (vehicle.acceleration > 0.001) {
+        vehicleGraphics.fillStyle(0x00ff00, 1)
+      } else {
+        vehicleGraphics.fillStyle(0xffff00, 1)
+      }
+
+      if (this.selectedVehicle === vehicle) {
+        vehicleGraphics.fillStyle(COLOR.PINK)
+        this.vehicleStats.text = `Speed: ${vehicle.speed}\nMax speed: ${vehicle.maxSpeed}\nEngine max speed: ${vehicle.engineMaxSpeed}\nAcceleration: ${vehicle.acceleration}\nIndex on road: ${vehicleIndex}`
+        this.drawPath(vehicle.path)
+      }
+
+      vehicleGraphics.fillRoundedRect(
+        -vehicle.length / 2,
+        -VEHICLE_WIDTH / 2,
+        vehicle.length,
+        VEHICLE_WIDTH,
+        2
+      )
+      vehicleGraphics.rotation = lane.getAngleAt(vehicle.x)
+    })
+  }
+
+  private drawVehicles() {
+    // Draw vehicles
+
+    /*
+    TODO
+    // Find the lead vehicle of the selected vehicle
+    let leadVehicleDistance: {leadVehicle: Vehicle; distance: number} | null =
+      null
+    if (this.selectedVehicle) {
+      // Find the index of the selected vehicle on his road.
+      const lane = this.selectedVehicle.getCurrentLane()
+      const vehicleIndex = lane!.vehicles.indexOf(this.selectedVehicle)
+
+
+      leadVehicleDistance = this.simulation.findDistanceToLeadVehicle({
+        path: this.selectedVehicle.path,
+        currentRoadIndex: this.selectedVehicle.currentRoadIndex,
+        vehicleIndex,
+      })
+    }
+ */
+
+    this.graphics.fillStyle(0xff0000, 1)
+    this.simulation.roads.forEach((road) => {
+      road.lanes.forEach((lane) => {
+        this.drawLaneVehicles(lane)
+      })
+    })
+    this.simulation.nodes.forEach((node) => {
+      node.connectionLanes.forEach((lane) => {
+        this.drawLaneVehicles(lane)
+      })
     })
   }
 
