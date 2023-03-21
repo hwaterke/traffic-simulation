@@ -573,21 +573,76 @@ export class Simulation {
   }
 
   private findPath(source: RoadNode, target: RoadNode): Lane[] | null {
-    // Get the outgoing lanes nodes !
+    // Get one random LaneNode from the RoadNode
+    const startLaneNode = randomElement(source.getOutgoingLaneNode())
+    const endLaneNode = randomElement(target.getOutgoingLaneNode())
 
-    // Need a way to find next lanes !
-    // Path will be a path of lanes to follow !
+    // Initialize distances and visited nodes
+    const distances = new Map<LaneNode, number>()
+    const visited = new Set<LaneNode>()
+    const previousNodes = new Map<LaneNode, LaneNode>()
+    const incomingLane = new Map<LaneNode, Lane[]>()
+    distances.set(startLaneNode, 0)
 
-    // Dijkstra from any outgoing lane to the target node (incoming lane node)
+    // Initialize priority queue with start node
+    const priorityQueue = new Map<LaneNode, number>()
+    priorityQueue.set(startLaneNode, 0)
 
-    // TODO Dijkstra
-    const start = randomElement(source.getOutgoingLanes())
-    const path = [start]
-    for (let i = 0; i < 5; i++) {
-      const lane = randomElement(this.lanesFrom(path[path.length - 1].target))
-      path.push(lane)
+    // Loop until we find the end node or the priority queue is empty
+    while (priorityQueue.size > 0) {
+      // Get node with smallest distance from priority queue
+      const currentNode = [...priorityQueue.entries()].reduce((a, b) =>
+        a[1] < b[1] ? a : b
+      )[0]
+      priorityQueue.delete(currentNode)
+      visited.add(currentNode)
+
+      // If we have reached the end node, we're done
+      if (currentNode === endLaneNode) {
+        // Build path by tracing back from end node to start node
+        const path = []
+        let node = endLaneNode
+        while (node !== startLaneNode) {
+          const previousNode = previousNodes.get(node)
+          if (!previousNode) {
+            // We have a disconnected graph
+            return null
+          }
+          const edge = incomingLane
+            .get(node)
+            ?.find((e) => e.source === previousNode)
+          if (!edge) {
+            // We have a disconnected graph
+            return null
+          }
+          path.unshift(edge)
+          node = previousNode
+        }
+        return path
+      }
+
+      // Update distances and priority queue
+      const outgoingLanes = this.lanesFrom(currentNode)
+      for (const lane of outgoingLanes) {
+        const neighborNode = lane.target
+        if (visited.has(neighborNode)) {
+          continue
+        }
+        const distance = distances.get(currentNode)! + lane.getLength()
+        if (
+          !distances.has(neighborNode) ||
+          distance < distances.get(neighborNode)!
+        ) {
+          distances.set(neighborNode, distance)
+          previousNodes.set(neighborNode, currentNode)
+          incomingLane.set(neighborNode, [lane])
+          priorityQueue.set(neighborNode, distance)
+        } else if (distance === distances.get(neighborNode)!) {
+          incomingLane.get(neighborNode)?.push(lane)
+        }
+      }
     }
-    return path
+    return null
   }
 
   /**
