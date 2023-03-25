@@ -57,7 +57,7 @@ export class TrafficScene extends Phaser.Scene {
     this.simulation.addRoad(
       {x: 700, y: 450},
       {x: 800, y: 550},
-      ROAD_TYPES.LANES_4,
+      ROAD_TYPES.LANES_2_ONE_WAY,
       {
         x: 700,
         y: 550,
@@ -66,7 +66,7 @@ export class TrafficScene extends Phaser.Scene {
     this.simulation.addRoad(
       {x: 800, y: 550},
       {x: 900, y: 450},
-      ROAD_TYPES.LANES_4,
+      ROAD_TYPES.LANES_2_ONE_WAY,
       {
         x: 900,
         y: 550,
@@ -75,7 +75,7 @@ export class TrafficScene extends Phaser.Scene {
     this.simulation.addRoad(
       {x: 900, y: 450},
       {x: 800, y: 350},
-      ROAD_TYPES.LANES_4,
+      ROAD_TYPES.LANES_2_ONE_WAY,
       {
         x: 900,
         y: 350,
@@ -84,7 +84,7 @@ export class TrafficScene extends Phaser.Scene {
     this.simulation.addRoad(
       {x: 800, y: 350},
       {x: 700, y: 450},
-      ROAD_TYPES.LANES_4,
+      ROAD_TYPES.LANES_2_ONE_WAY,
       {
         x: 700,
         y: 350,
@@ -93,14 +93,14 @@ export class TrafficScene extends Phaser.Scene {
 
     // Below roundabout
     this.simulation.addRoad(
-      {x: 800, y: 550},
       {x: 800, y: 650},
+      {x: 800, y: 550},
       ROAD_TYPES.BASIC
     )
     // Left of roundabout
     this.simulation.addRoad(
-      {x: 700, y: 450},
       {x: 600, y: 450},
+      {x: 700, y: 450},
       ROAD_TYPES.BASIC
     )
     // Connect the two
@@ -120,8 +120,8 @@ export class TrafficScene extends Phaser.Scene {
       ROAD_TYPES.BASIC
     )
     this.simulation.addRoad(
-      {x: 1000, y: 450},
       {x: 800, y: 650},
+      {x: 1000, y: 450},
       ROAD_TYPES.BASIC
     )
 
@@ -148,8 +148,60 @@ export class TrafficScene extends Phaser.Scene {
       {x: 1000, y: 850},
       ROAD_TYPES.LANES_8,
       {
-        x: 1400,
-        y: 850,
+        x: 1200,
+        y: 650,
+      }
+    )
+
+    // Top of roundabout
+    this.simulation.addRoad(
+      {x: 800, y: 250},
+      {x: 800, y: 350},
+      ROAD_TYPES.BASIC
+    )
+    this.simulation.addRoad(
+      {x: 800, y: 150},
+      {x: 800, y: 250},
+      ROAD_TYPES.BASIC
+    )
+    this.simulation.addRoad(
+      {x: 600, y: 250},
+      {x: 800, y: 250},
+      ROAD_TYPES.BASIC
+    )
+    this.simulation.addRoad(
+      {x: 800, y: 250},
+      {x: 1000, y: 250},
+      ROAD_TYPES.BASIC
+    )
+
+    this.simulation.addRoad(
+      {x: 1000, y: 250},
+      {x: 1000, y: 450},
+      ROAD_TYPES.BASIC
+    )
+    this.simulation.addRoad(
+      {x: 600, y: 250},
+      {x: 600, y: 450},
+      ROAD_TYPES.BASIC
+    )
+
+    this.simulation.addRoad(
+      {x: 800, y: 150},
+      {x: 1000, y: 250},
+      ROAD_TYPES.LANES_4,
+      {
+        x: 1000,
+        y: 150,
+      }
+    )
+    this.simulation.addRoad(
+      {x: 600, y: 250},
+      {x: 800, y: 150},
+      ROAD_TYPES.LANES_4,
+      {
+        x: 600,
+        y: 150,
       }
     )
 

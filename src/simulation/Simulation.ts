@@ -24,6 +24,12 @@ export const ROAD_TYPES = {
       {offset: -4, isReversed: true},
     ],
   },
+  LANES_2_ONE_WAY: {
+    lanes: [
+      {offset: 4, isReversed: false},
+      {offset: -4, isReversed: false},
+    ],
+  },
   LANES_4: {
     lanes: [
       {offset: 4, isReversed: false},
@@ -678,7 +684,7 @@ export class Simulation {
           shorten.source,
           shorten.target,
           shorten.control,
-          laneDefinition.offset
+          -laneDefinition.offset
         )
 
         lane.source.x = lane.curve!.p0.x = laneDefinition.isReversed
