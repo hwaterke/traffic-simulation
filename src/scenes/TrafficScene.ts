@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import {Lane, ROAD_TYPES, Simulation} from '../simulation/Simulation'
-import {GAME_HEIGHT, GAME_WIDTH} from '../constants'
+import {GAME_HEIGHT, GAME_WIDTH, LANE_WIDTH} from '../constants'
 import {Vehicle} from '../simulation/Vehicle'
 
 const LANE_NODE_RADIUS = 3
@@ -8,14 +8,12 @@ const EDGE_WIDTH = 16
 const VEHICLE_WIDTH = 6
 const DEBUG = false
 
-const LANE_WIDTH = 1
-
 const COLOR = {
-  ROAD: 0x666666,
-  ROAD_NODE: 0x666666,
-  LANE: 0xff0000,
-  LANE_CONNECTIONS: 0x00ff00,
-  LANE_NODE: 0x00ff00,
+  ROAD: 0x000000,
+  ROAD_NODE: 0x000000,
+  LANE: 0x777777,
+  LANE_CONNECTIONS: 0x777777,
+  LANE_NODE: 0x777777,
 
   PINK: 0xff00ff,
   TEAL: 0x008080,
@@ -46,6 +44,7 @@ export class TrafficScene extends Phaser.Scene {
       },
       onVehicleRemoved: (vehicle) => {
         if (this.following === vehicle) {
+          this.cameras.main.stopFollow()
           this.following = null
         }
         if (this.selectedVehicle === vehicle) {
@@ -383,13 +382,13 @@ export class TrafficScene extends Phaser.Scene {
 
     this.simulation.nodes.forEach((node) => {
       const incoming = node.getIncomingLaneNode()
-      this.graphics.fillStyle(0xfff000, 0.4)
+      this.graphics.fillStyle(COLOR.LANE_NODE, 0.4)
       incoming.forEach((laneNode) => {
         this.graphics.fillCircle(laneNode.x, laneNode.y, LANE_NODE_RADIUS)
       })
 
       const outgoing = node.getOutgoingLaneNode()
-      this.graphics.fillStyle(0x000fff, 0.4)
+      this.graphics.fillStyle(COLOR.LANE_NODE, 0.4)
       outgoing.forEach((laneNode) => {
         this.graphics.fillCircle(laneNode.x, laneNode.y, LANE_NODE_RADIUS)
       })

@@ -3,6 +3,7 @@ import {RoadType} from '../types'
 import {Lane, RoadNode} from './Simulation'
 import {Curve} from './Curve'
 import Phaser from 'phaser'
+import {LANE_GAP, LANE_WIDTH} from '../constants'
 
 export class Road extends Curve<RoadNode> {
   public lanes: Lane[] = []
@@ -26,7 +27,8 @@ export class Road extends Curve<RoadNode> {
             Math.abs(laneDefinition.offset)
           )
         ) +
-      4
+      LANE_WIDTH +
+      LANE_GAP
     )
   }
 

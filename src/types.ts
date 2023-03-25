@@ -18,8 +18,13 @@ export type Graph = {
   edges: Edge[]
 }
 
+export type LaneDefinition = {
+  readonly offset: number
+  readonly isReversed: boolean
+}
+
 export type RoadType = {
-  lanes: readonly {readonly offset: number; readonly isReversed: boolean}[]
+  lanes: readonly LaneDefinition[]
 }
 
 export interface LaneNode extends Coordinates {}

@@ -1,4 +1,4 @@
-import {Coordinates, LaneNode, RoadType} from '../types'
+import {Coordinates, LaneDefinition, LaneNode, RoadType} from '../types'
 import {TrafficSignal} from '../TrafficSignal'
 import {Vehicle} from './Vehicle'
 import {Road} from './Road'
@@ -13,53 +13,40 @@ import {
 } from '../utils'
 import Phaser from 'phaser'
 import {Curve} from './Curve'
+import {LANE_GAP, LANE_WIDTH} from '../constants'
+
+function buildRoadType(forwardLanes: number, reverseLanes: number): RoadType {
+  const totalLanes = forwardLanes + reverseLanes
+  const lanes: LaneDefinition[] = []
+
+  if (totalLanes % 2 === 0) {
+    for (let i = 0; i < totalLanes; i++) {
+      lanes.push({
+        offset: (-(totalLanes / 2) + i + 0.5) * (LANE_WIDTH + LANE_GAP),
+        isReversed: i < reverseLanes,
+      })
+    }
+  } else {
+    for (let i = 0; i < totalLanes; i++) {
+      lanes.push({
+        offset: (-Math.floor(totalLanes / 2) + i) * (LANE_WIDTH + LANE_GAP),
+        isReversed: i < reverseLanes,
+      })
+    }
+  }
+
+  return {
+    lanes,
+  }
+}
 
 export const ROAD_TYPES = {
-  ONE_WAY: {
-    lanes: [{offset: 0, isReversed: false}],
-  },
-  BASIC: {
-    lanes: [
-      {offset: 4, isReversed: false},
-      {offset: -4, isReversed: true},
-    ],
-  },
-  LANES_2_ONE_WAY: {
-    lanes: [
-      {offset: 4, isReversed: false},
-      {offset: -4, isReversed: false},
-    ],
-  },
-  LANES_4: {
-    lanes: [
-      {offset: 4, isReversed: false},
-      {offset: 12, isReversed: false},
-      {offset: -4, isReversed: true},
-      {offset: -12, isReversed: true},
-    ],
-  },
-  LANES_6: {
-    lanes: [
-      {offset: 4, isReversed: false},
-      {offset: 12, isReversed: false},
-      {offset: 20, isReversed: false},
-      {offset: -4, isReversed: true},
-      {offset: -12, isReversed: true},
-      {offset: -20, isReversed: true},
-    ],
-  },
-  LANES_8: {
-    lanes: [
-      {offset: 4, isReversed: false},
-      {offset: 12, isReversed: false},
-      {offset: 20, isReversed: false},
-      {offset: 28, isReversed: false},
-      {offset: -4, isReversed: true},
-      {offset: -12, isReversed: true},
-      {offset: -20, isReversed: true},
-      {offset: -28, isReversed: true},
-    ],
-  },
+  ONE_WAY: buildRoadType(1, 0),
+  BASIC: buildRoadType(1, 1),
+  LANES_2_ONE_WAY: buildRoadType(2, 0),
+  LANES_4: buildRoadType(2, 2),
+  LANES_6: buildRoadType(3, 3),
+  LANES_8: buildRoadType(4, 4),
 } as const satisfies Record<string, RoadType>
 
 type SimulationOptions = {
