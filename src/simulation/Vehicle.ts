@@ -1,9 +1,14 @@
 import {Lane} from './Simulation'
+import {Coordinates} from '../types'
 
 export class Vehicle {
   public x = 0 // Position along its current Lane [0;lane length]
   public speed = 0
   public acceleration = 0
+
+  // Used to draw the vehicle
+  public coordinates: Coordinates = {x: 0, y: 0}
+  public angle: number = 0
 
   public path: Lane[] = []
   public currentLaneIndex = 0
@@ -74,6 +79,8 @@ export class Vehicle {
   }
 
   getCurrentLane(): Lane | null {
-    return this.path.length > 0 ? this.path[this.currentLaneIndex] : null
+    return this.path.length > 0 && this.currentLaneIndex < this.path.length
+      ? this.path[this.currentLaneIndex]
+      : null
   }
 }

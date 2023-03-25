@@ -270,6 +270,15 @@ export class Simulation {
           }
         }
       }
+
+      // Update vehicle position
+      const currentLane = vehicle.getCurrentLane()
+      if (currentLane !== null) {
+        const vehiclePosition = currentLane.getPointAt(vehicle.x)
+        vehicle.coordinates.x = vehiclePosition.x
+        vehicle.coordinates.y = vehiclePosition.y
+        vehicle.angle = currentLane.getAngleAt(vehicle.x)
+      }
     })
   }
 

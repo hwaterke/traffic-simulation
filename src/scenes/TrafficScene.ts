@@ -36,6 +36,7 @@ export class TrafficScene extends Phaser.Scene {
 
   private isPaused: boolean = false
   private cameraControls!: Phaser.Cameras.Controls.FixedKeyControl
+  private following: Vehicle | null = null
 
   create(): void {
     this.vehicleGraphics = new Map()
@@ -44,12 +45,15 @@ export class TrafficScene extends Phaser.Scene {
         this.vehicleGraphics.set(vehicle, this.add.graphics())
       },
       onVehicleRemoved: (vehicle) => {
-        this.vehicleGraphics.get(vehicle)!.destroy()
-        this.vehicleGraphics.delete(vehicle)
+        if (this.following === vehicle) {
+          this.following = null
+        }
         if (this.selectedVehicle === vehicle) {
           this.selectedVehicle = null
           this.vehicleStats.text = 'Select a vehicle'
         }
+        this.vehicleGraphics.get(vehicle)!.destroy()
+        this.vehicleGraphics.delete(vehicle)
       },
     })
 
@@ -251,6 +255,18 @@ export class TrafficScene extends Phaser.Scene {
       }
     })
 
+    this.input.keyboard.on('keydown-F', () => {
+      if (this.following) {
+        this.following = null
+        this.cameras.main.stopFollow()
+      } else if (this.selectedVehicle) {
+        this.cameras.main.startFollow(
+          this.vehicleGraphics.get(this.selectedVehicle)!
+        )
+        this.following = this.selectedVehicle
+      }
+    })
+
     this.input.keyboard.on('keydown-C', () => {
       for (let i = 0; i < 10; i++) {
         this.simulation.addVehicle(null)
@@ -407,9 +423,8 @@ export class TrafficScene extends Phaser.Scene {
       const vehicleGraphics = this.vehicleGraphics.get(vehicle)!
       vehicleGraphics.clear()
 
-      const vehiclePosition = lane.getPointAt(vehicle.x)
-      vehicleGraphics.x = vehiclePosition.x
-      vehicleGraphics.y = vehiclePosition.y
+      vehicleGraphics.x = vehicle.coordinates.x
+      vehicleGraphics.y = vehicle.coordinates.y
 
       if (vehicle.acceleration < -0.001) {
         vehicleGraphics.fillStyle(0xff0000, 1)
@@ -432,7 +447,7 @@ export class TrafficScene extends Phaser.Scene {
         VEHICLE_WIDTH,
         2
       )
-      vehicleGraphics.rotation = lane.getAngleAt(vehicle.x)
+      vehicleGraphics.rotation = vehicle.angle
     })
   }
 
