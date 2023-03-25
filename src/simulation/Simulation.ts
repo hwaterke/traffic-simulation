@@ -665,22 +665,21 @@ export class Simulation {
         road.curve instanceof Phaser.Curves.QuadraticBezier &&
         lane.curve instanceof Phaser.Curves.QuadraticBezier
       ) {
-        const parallel = getParallelCurvePoints(
+        // First shorten then shift
+        const shorten = shortenCurveSegment(
           road.source,
-          road.target,
           road.curve.p1,
-          laneDefinition.offset
-        )
-
-        const newCurve = shortenCurveSegment(
-          parallel.source,
-          parallel.control,
-          parallel.target,
+          road.target,
           road.source.size() / 2,
           road.target.size() / 2
         )
-
-        new Phaser.Curves.Spline()
+        // Then shift
+        const newCurve = getParallelCurvePoints(
+          shorten.source,
+          shorten.target,
+          shorten.control,
+          laneDefinition.offset
+        )
 
         lane.source.x = lane.curve!.p0.x = laneDefinition.isReversed
           ? newCurve.target.x
