@@ -47,6 +47,27 @@ default one.
       immediately stop the vehicle and stop relying on the acceleration.
 - [ ] Make a high level data structure that is then translated to low level
       Graph
+- [ ] Only render cars inside the viewport
+
   - Include road type (one way, number of lanes, speed limit)
   - Include intersection type (traffic signal or stop signs or right priority,
     give way)
+
+- Improve map builder
+
+  - Build mode, remove mode, click and drag, road type selection
+
+- Police
+- Intersection do not slow down if not needed.
+- Multiple lanes
+  - Slow vehicles on the right
+- Pedestrian
+- Crazy drivers (20% above speed limit)
+- Rain conditions
+- Icy conditions
+
+## Check in City Skylines
+
+- How a huge intersection works (6 branches of 4 lanes)
+- Investigate crossing of 2 roads (without signals)
+- Investigate lane merging (seems to sometimes ignore collision sometimes not)
